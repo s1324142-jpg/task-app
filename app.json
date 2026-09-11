@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "suke 課題管理",
+    "slug": "suke-assignments",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "suke",
+    "android": {
+      "package": "jp.suke.assignments",
+      "versionCode": 1,
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "jp.suke.assignments",
+      "supportsTablet": true
+    },
+    "plugins": [
+      "expo-notifications",
+      "@react-native-community/datetimepicker",
+      "expo-font"
+    ]
+  }
+}
