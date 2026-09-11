@@ -1,6 +1,6 @@
 import { Alert } from './alerts';
-import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Assignment, statusLabels } from '../domain/models';
 import { DAY, HOUR, deadlineLabel, relativeDeadline } from '../domain/dates';
@@ -29,10 +29,14 @@ export function Empty({ title = '課題はありません', message = '新しい
   </View>;
 }
 export function AssignmentCard({ assignment: a, now, onPress, reason }: { assignment: Assignment; now: Date; onPress: () => void; reason?: string }) {
+  const entrance = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 360, useNativeDriver: true }).start(); }, [entrance]);
   const diff = new Date(a.deadline).getTime() - now.getTime();
   const color = a.status === 'submitted' ? colors.muted : diff <= 24 * HOUR ? colors.red : diff <= 3 * DAY ? colors.amber : diff <= 7 * DAY ? colors.blue : colors.green;
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${a.courseName} ${a.title} ${deadlineLabel(a.deadline)} ${statusLabels[a.status]}`} onPress={onPress}
-    style={({ pressed }) => [s.card, { borderLeftWidth: 4, borderLeftColor: color, opacity: pressed ? 0.7 : 1 }]}>
+  return <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }, { scale }] }}><Pressable accessibilityRole="button" accessibilityLabel={`${a.courseName} ${a.title} ${deadlineLabel(a.deadline)} ${statusLabels[a.status]}`} onPress={onPress}
+    onPressIn={() => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true }).start()} onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
+    style={[s.card, { borderLeftWidth: 4, borderLeftColor: color }]}>
     <View style={s.spread}><Text style={[s.muted, { flex: 1 }]}>{a.courseName}</Text><Feather name="chevron-right" size={18} color={colors.muted} /></View>
     <Text style={[s.heading, { lineHeight: 26 }]}>{a.title}</Text>
     <Text style={[s.text, { color, fontSize: 13 }]}>{deadlineLabel(a.deadline)}まで</Text>
@@ -41,7 +45,7 @@ export function AssignmentCard({ assignment: a, now, onPress, reason }: { assign
       <Text style={s.muted}>{a.estimatedMinutes ? `${a.estimatedMinutes}分 · ` : ''}{statusLabels[a.status]}</Text>
     </View>
     {reason && <><View style={s.divider} /><Text style={[s.muted, { color: colors.green }]}>{reason}</Text></>}
-  </Pressable>;
+  </Pressable></Animated.View>;
 }
 export function PageTitle({ title, subtitle, onAdd }: { title: string; subtitle?: string; onAdd?: () => void }) {
   return <View style={s.spread}><View style={{ flex: 1, gap: 5 }}><Text style={s.title}>{title}</Text>{subtitle && <Text style={s.muted}>{subtitle}</Text>}</View>

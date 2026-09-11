@@ -1,9 +1,9 @@
-import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state/AppContext';
-import { dayDifference, isThisWeek } from '../domain/dates';
+import { dayDifference, dayKey, isThisWeek, monthDays } from '../domain/dates';
 import { todayAssignments, priorityReason } from '../domain/priority';
 import { RootNavigation } from '../navigation/types';
 import { AssignmentCard, Empty, PageTitle } from '../ui/components';
@@ -12,16 +12,26 @@ import { colors, styles as s } from '../ui/theme';
 export function HomeScreen() {
   const { data, now, warning } = useApp();
   const nav = useNavigation<RootNavigation>();
+  const float = useRef(new Animated.Value(0)).current;
+  useEffect(() => { const loop = Animated.loop(Animated.sequence([Animated.timing(float, { toValue: 1, duration: 1800, useNativeDriver: true }), Animated.timing(float, { toValue: 0, duration: 1800, useNativeDriver: true })])); loop.start(); return () => loop.stop(); }, [float]);
   if (!data) return null;
   const open = data.assignments.filter(a => a.status !== 'submitted');
   const today = todayAssignments(open, now);
   const dueToday = open.filter(a => dayDifference(a.deadline, now) === 0);
   const overdue = open.filter(a => new Date(a.deadline) < now);
   const date = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（${'日月火水木金土'[now.getDay()]}）`;
+  const calendarDays = monthDays(now);
+  const byDay = new Map<string, typeof open>();
+  for (const assignment of open) {
+    const key = dayKey(assignment.deadline);
+    byDay.set(key, [...(byDay.get(key) ?? []), assignment].sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline)));
+  }
+  const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString('ja-JP', { hour: 'numeric', minute: '2-digit' });
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
     <PageTitle title="suke" subtitle={date} onAdd={() => nav.navigate('Editor')} />
-    <View style={{ backgroundColor: colors.green, borderRadius: 24, padding: 24, gap: 18 }}>
-      <View style={s.spread}><Text style={{ color: '#CEE3D7', fontSize: 12, letterSpacing: 2 }}>YOUR STUDY, AT A GLANCE</Text><Feather name="sun" size={22} color="#D5E6B4" /></View>
+    <View style={{ backgroundColor: colors.green, borderRadius: 28, padding: 24, gap: 18, overflow: 'hidden' }}>
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', right: -18, top: -22, width: 110, height: 110, borderRadius: 60, backgroundColor: '#79A995', opacity: 0.35, transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) }] }} />
+      <View style={s.spread}><Text style={{ color: '#CEE3D7', fontSize: 12, letterSpacing: 2 }}>YOUR STUDY, AT A GLANCE</Text><Animated.View style={{ transform: [{ rotate: float.interpolate({ inputRange: [0, 1], outputRange: ['-8deg', '8deg'] }) }] }}><Feather name="sun" size={22} color="#D5E6B4" /></Animated.View></View>
       <Text style={{ color: 'white', fontSize: 25, lineHeight: 37, fontWeight: '700' }}>{now.getHours() < 11 ? 'おはようございます。' : now.getHours() < 18 ? 'こんにちは。' : 'おつかれさまです。'}{'\n'}今日の一歩を、ここから。</Text>
       <Text style={{ color: '#DFEEE6', fontSize: 14, lineHeight: 23 }}>{today.length ? `今日は${today.length}件の課題に取り組みましょう。` : '今日のおすすめ課題はありません。'}{dueToday.length ? `\n今日締切の課題が${dueToday.length}件あります。` : ''}</Text>
     </View>
@@ -30,8 +40,21 @@ export function HomeScreen() {
     </View>
     {!!overdue.length && <Text accessibilityRole="alert" style={[s.text, { color: colors.red }]}>締切超過 {overdue.length}件 · 提出状況を確認してください</Text>}
     {warning && <Text accessibilityRole="alert" style={[s.muted, { color: colors.amber }]}>{warning}</Text>}
-    <View style={s.spread}><Text style={s.heading}>今日やる</Text><Text style={s.muted}>優先度の高い順 · {today.length}件</Text></View>
-    {today.length ? today.slice(0, 3).map(a => <AssignmentCard key={a.id} assignment={a} now={now} reason={priorityReason(a, now)} onPress={() => nav.navigate('Detail', { id: a.id })} />) : <Empty title={data.assignments.length ? '今日は余裕のある一日' : '課題を、ひとつに。'} message={data.assignments.length ? '課題の詳細から「今日やる」に追加できます。' : 'まずは授業名と締切を登録しましょう。\n締切も今日やることも、ここで確認できます。'} onAdd={data.assignments.length ? undefined : () => nav.navigate('Editor')} />}
+    <View style={s.card}>
+      <View style={s.spread}><Text style={s.heading}>{now.getMonth() + 1}月の締切</Text><Text style={s.muted}>授業名 · 時刻</Text></View>
+      <View style={{ flexDirection: 'row' }}>{[...'日月火水木金土'].map(day => <Text key={day} style={[s.muted, { width: '14.2857%', textAlign: 'center' }]}>{day}</Text>)}</View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{calendarDays.map(day => {
+        const key = dayKey(day); const items = byDay.get(key) ?? []; const isCurrentMonth = day.getMonth() === now.getMonth();
+        return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${day.getMonth() + 1}月${day.getDate()}日 ${items.length}件`}
+          style={{ width: '14.2857%', minHeight: 68, padding: 3, borderRadius: 8, backgroundColor: key === dayKey(now) ? colors.pale : 'transparent', opacity: isCurrentMonth ? 1 : 0.45 }}>
+          <Text style={{ fontSize: 13, color: colors.ink, textAlign: 'center', fontWeight: key === dayKey(now) ? '700' : '400' }}>{day.getDate()}</Text>
+          {items.slice(0, 2).map(item => <Text key={item.id} numberOfLines={1} style={{ color: colors.green, fontSize: 9, lineHeight: 13 }}>{item.courseName} {timeLabel(item.deadline)}</Text>)}
+          {items.length > 2 && <Text style={{ color: colors.muted, fontSize: 9 }}>+{items.length - 2}件</Text>}
+        </Pressable>;
+      })}</View>
+    </View>
+    <View style={s.spread}><Text style={s.heading}>今日やるべきこと</Text><Text style={s.muted}>優先度の高い順 · {today.length}件</Text></View>
+    {today.length ? today.slice(0, 3).map(a => <AssignmentCard key={a.id} assignment={a} now={now} reason={priorityReason(a, now)} onPress={() => nav.navigate('Detail', { id: a.id })} />) : <Empty title={data.assignments.length ? '今日は余裕のある一日' : '課題を、ひとつに。'} message={data.assignments.length ? 'TODOで余裕がある課題も確認できます。' : 'まずは授業名と締切を登録しましょう。\nTODOと締切をここで確認できます。'} onAdd={data.assignments.length ? undefined : () => nav.navigate('Editor')} />}
     <Text style={s.heading}>これからの締切</Text>
     <View style={s.card}>{['今日締切', '明日締切', '3日以内', '7日以内', 'それ以降'].map((label, index) => {
       const count = open.filter(a => {

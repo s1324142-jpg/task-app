@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  background: '#F5F6F2', paper: '#FFFFFF', ink: '#20352F', muted: '#738079',
-  green: '#286B57', pale: '#E7F0EA', border: '#E1E7E0', red: '#BA493B',
-  amber: '#926119', blue: '#496D94',
+  background: '#FFF8F3', paper: '#FFFFFF', ink: '#293B37', muted: '#7F8883',
+  green: '#3A806D', pale: '#E6F4EC', border: '#F0E5DF', red: '#C86459',
+  amber: '#B07A38', blue: '#668BB2', pink: '#F7D9D5', lavender: '#E9E2F6',
 };
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
   heading: { color: colors.ink, fontSize: 18, fontWeight: '700' },
   text: { color: colors.ink, fontSize: 15, lineHeight: 23 },
   muted: { color: colors.muted, fontSize: 13, lineHeight: 21 },
-  card: { backgroundColor: colors.paper, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 18, gap: 12 },
+  card: { backgroundColor: colors.paper, borderRadius: 22, borderWidth: 1, borderColor: colors.border, padding: 18, gap: 12, shadowColor: '#BFA99B', shadowOpacity: 0.09, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
   divider: { height: 1, backgroundColor: colors.border },
   button: { minHeight: 48, borderRadius: 13, paddingHorizontal: 18, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green },
   buttonText: { fontSize: 15, fontWeight: '700', color: 'white' },

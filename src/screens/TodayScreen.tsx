@@ -1,18 +1,24 @@
 import React from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '../state/AppContext';
-import { todayAssignments, priorityReason } from '../domain/priority';
+import { todoAssignments, priorityReason } from '../domain/priority';
 import { RootNavigation } from '../navigation/types';
 import { AssignmentCard, Empty, PageTitle } from '../ui/components';
 import { styles as s } from '../ui/theme';
 
 export function TodayScreen() {
   const { data, now } = useApp(); const nav = useNavigation<RootNavigation>();
-  const assignments = todayAssignments(data?.assignments ?? [], now);
-  const minutes = assignments.reduce((total, a) => total + (a.status === 'completed' ? 0 : a.estimatedMinutes ?? 0), 0);
-  return <FlatList style={s.screen} contentContainerStyle={s.content} data={assignments} keyExtractor={a => a.id}
-    ListHeaderComponent={<View style={{ gap: 18 }}><PageTitle title="今日やる" subtitle="焦らず、ひとつずつ。" onAdd={() => nav.navigate('Editor')} /><View style={s.card}><Text style={s.heading}>{assignments.length}件の課題 · 推定 {minutes}分</Text><Text style={s.muted}>締切・作業時間・重要度からおすすめしています。詳細画面から、自分で今日やる課題も選べます。完了した課題は、提出まで確認しましょう。</Text></View></View>}
-    ListEmptyComponent={<Empty title="今日のおすすめ課題はありません" message="課題を登録するか、詳細から今日やるに追加しましょう。" />}
-    renderItem={({ item }) => <AssignmentCard assignment={item} now={now} reason={priorityReason(item, now)} onPress={() => nav.navigate('Detail', { id: item.id })} />} />;
+  const { shouldDoToday, flexible } = todoAssignments(data?.assignments ?? [], now);
+  const minutes = shouldDoToday.reduce((total, a) => total + (a.status === 'completed' ? 0 : a.estimatedMinutes ?? 0), 0);
+  return <ScrollView style={s.screen} contentContainerStyle={s.content}>
+    <PageTitle title="TODO" subtitle="今日の優先順位を、わかりやすく。" onAdd={() => nav.navigate('Editor')} />
+    <View style={s.card}><Text style={s.heading}>今日やるべきこと {shouldDoToday.length}件 · 推定 {minutes}分</Text><Text style={s.muted}>自分で指定した課題と、提出期限が明日までの未提出課題が入ります。日付が変わると自動で分類されます。</Text></View>
+    <View style={s.spread}><Text style={s.heading}>今日やるべきこと</Text><Text style={s.muted}>{shouldDoToday.length}件</Text></View>
+    {shouldDoToday.length ? shouldDoToday.map(item => <AssignmentCard key={item.id} assignment={item} now={now} reason={priorityReason(item, now)} onPress={() => nav.navigate('Detail', { id: item.id })} />)
+      : <Empty title="今日やるべき課題はありません" message="余裕がある課題を先に進めることもできます。" />}
+    <View style={s.spread}><Text style={s.heading}>余裕があるもの</Text><Text style={s.muted}>{flexible.length}件</Text></View>
+    {flexible.length ? flexible.map(item => <AssignmentCard key={item.id} assignment={item} now={now} reason={priorityReason(item, now)} onPress={() => nav.navigate('Detail', { id: item.id })} />)
+      : <Text style={s.muted}>提出期限が明後日以降の未提出課題はありません。</Text>}
+  </ScrollView>;
 }

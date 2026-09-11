@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../state/AppContext';
 import { RootStackParams } from '../navigation/types';
 import { Status, statuses, statusLabels } from '../domain/models';
-import { deadlineLabel, relativeDeadline } from '../domain/dates';
+import { dayDifference, deadlineLabel, relativeDeadline } from '../domain/dates';
 import { Button, Chips, Empty, reportError } from '../ui/components';
 import { colors, styles as s } from '../ui/theme';
 
@@ -13,6 +13,7 @@ export function DetailScreen({ route, navigation }: NativeStackScreenProps<RootS
   const { data, change, now } = useApp(); const [busy, setBusy] = useState(false);
   const a = data?.assignments.find(item => item.id === route.params.id);
   if (!a) return <View style={s.content}><Empty title="課題が見つかりません" message="削除された課題の可能性があります。" /></View>;
+  const automaticallyDue = a.status !== 'submitted' && dayDifference(a.deadline, now) <= 1;
   const update = async (patch: { status?: Status; doToday?: boolean }) => {
     if (busy) return; setBusy(true);
     try { await change(state => ({ ...state, assignments: state.assignments.map(item => item.id === a.id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item) })); }
@@ -39,7 +40,7 @@ export function DetailScreen({ route, navigation }: NativeStackScreenProps<RootS
     <View style={{ gap: 10 }}><Text style={s.heading}>進捗・提出状況</Text><View pointerEvents={busy ? 'none' : 'auto'}><Chips value={a.status} options={statuses.map(value => ({ value, label: statusLabels[value] }))} onChange={status => { void update({ status }); }} /></View>
       <Text style={s.muted}>「完了」は作業が終わった状態です。manabaに提出したら「提出済み」にしてください。</Text></View>
     <Button disabled={busy} title={a.status === 'submitted' ? '未提出に戻す' : '提出済みにする'} onPress={() => { void update({ status: a.status === 'submitted' ? 'not_started' : 'submitted' }); }} />
-    <Button disabled={busy || a.status === 'submitted'} secondary title={a.doToday ? '今日やるから外す' : '今日やるに追加'} onPress={() => { void update({ doToday: !a.doToday }); }} />
+    <Button disabled={busy || a.status === 'submitted' || automaticallyDue} secondary title={automaticallyDue ? '期限が近いため今日やるべきことに自動追加' : a.doToday ? '今日やるべきことから外す' : '今日やるべきことに追加'} onPress={() => { void update({ doToday: !a.doToday }); }} />
     <View style={s.card}><View style={s.spread}><Text style={s.muted}>推定作業時間</Text><Text style={s.text}>{a.estimatedMinutes ? `${a.estimatedMinutes}分` : '未設定'}</Text></View><View style={s.spread}><Text style={s.muted}>重要度</Text><Text style={[s.text, { color: colors.green }]}>{'★'.repeat(a.importance)}{'☆'.repeat(5 - a.importance)}</Text></View></View>
     {a.description ? <View style={s.card}><Text style={s.heading}>課題説明</Text><Text selectable style={s.text}>{a.description}</Text></View> : null}
     {a.memo ? <View style={s.card}><Text style={s.heading}>メモ</Text><Text selectable style={s.text}>{a.memo}</Text></View> : null}

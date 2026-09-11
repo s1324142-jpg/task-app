@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { priorityScore, todayAssignments } from '../src/domain/priority';
+import { priorityScore, todoAssignments, todayAssignments } from '../src/domain/priority';
 import { DAY, HOUR, dayDifference, dayKey, isThisWeek, monthDays, relativeDeadline } from '../src/domain/dates';
 import { upsertAssignment } from '../src/domain/assignments';
 import { assignmentSchema, emptyData, stateSchema } from '../src/domain/models';
@@ -11,21 +11,28 @@ describe('優先順位', () => {
   });
   it('提出済みは手動指定が残っていても除外する', () => {
     const a = assignment({ status: 'submitted', doToday: true });
-    expect(priorityScore(a, now)).toBe(-Infinity); expect(todayAssignments([a], now)).toEqual([]);
+    expect(priorityScore(a, now)).toBe(-Infinity); expect(todoAssignments([a], now)).toEqual({ shouldDoToday: [], flexible: [] });
   });
   it('期限超過と完了・未提出を今日やるに残す', () => {
     const a = assignment({ status: 'completed', deadline: new Date(+now - HOUR).toISOString() });
     expect(todayAssignments([a], now)).toHaveLength(1);
   });
-  it('長時間の重要課題は締切順だけにしない', () => {
+  it('余裕がある課題も優先度順に並べる', () => {
     const urgent = assignment({ id: 'urgent', importance: 1, deadline: new Date(+now + 48 * HOUR).toISOString() });
     const hard = assignment({ id: 'hard', importance: 5, estimatedMinutes: 180, deadline: new Date(+now + 5 * DAY).toISOString() });
-    expect(todayAssignments([urgent, hard], now).map(a => a.id)).toEqual(['hard', 'urgent']);
+    expect(todoAssignments([urgent, hard], now).flexible.map(a => a.id)).toEqual(['hard', 'urgent']);
   });
-  it('遠い軽い課題を除外し、手動指定なら表示する', () => {
+  it('遠い課題は余裕ありに置き、手動指定すると今日やるべきことへ移す', () => {
     const a = assignment({ deadline: new Date(+now + 30 * DAY).toISOString() });
-    expect(todayAssignments([a], now)).toHaveLength(0);
-    expect(todayAssignments([{ ...a, doToday: true }], now)).toHaveLength(1);
+    expect(todoAssignments([a], now)).toMatchObject({ shouldDoToday: [], flexible: [a] });
+    expect(todoAssignments([{ ...a, doToday: true }], now)).toMatchObject({ shouldDoToday: [{ ...a, doToday: true }], flexible: [] });
+  });
+  it('24時間以上先でも提出日が翌日なら今日やるべきことへ自動追加する', () => {
+    const tomorrow = assignment({ id: 'tomorrow', deadline: '2026-09-12T23:59:00+09:00' });
+    const dayAfterTomorrow = assignment({ id: 'later', deadline: '2026-09-13T00:00:00+09:00' });
+    const groups = todoAssignments([dayAfterTomorrow, tomorrow], now);
+    expect(groups.shouldDoToday.map(a => a.id)).toEqual(['tomorrow']);
+    expect(groups.flexible.map(a => a.id)).toEqual(['later']);
   });
 });
 describe('端末の日付とカレンダー', () => {

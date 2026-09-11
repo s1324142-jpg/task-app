@@ -16,6 +16,7 @@ import { ListScreen } from './src/screens/ListScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { DetailScreen } from './src/screens/DetailScreen';
 import { EditorScreen } from './src/screens/EditorScreen';
+import { ManabaLoginScreen } from './src/screens/ManabaLoginScreen';
 import { Button } from './src/ui/components';
 import { colors, styles as s } from './src/ui/theme';
 
@@ -31,7 +32,7 @@ function MainTabs() {
     tabBarIcon: ({ color, size }) => <Feather name={icons[route.name]} size={size - 2} color={color} />,
   })}>
     <Tabs.Screen name="Home" component={HomeScreen} options={{ title: 'ホーム' }} />
-    <Tabs.Screen name="Today" component={TodayScreen} options={{ title: '今日やる' }} />
+    <Tabs.Screen name="Today" component={TodayScreen} options={{ title: 'TODO' }} />
     <Tabs.Screen name="Calendar" component={CalendarScreen} options={{ title: 'カレンダー' }} />
     <Tabs.Screen name="Assignments" component={ListScreen} options={{ title: '課題一覧' }} />
     <Tabs.Screen name="Settings" component={SettingsScreen} options={{ title: '設定' }} />
@@ -61,6 +62,7 @@ function Root() {
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="Detail" component={DetailScreen} options={{ title: '課題詳細' }} />
       <Stack.Screen name="Editor" component={EditorScreen} options={({ route }) => ({ title: route.params?.id ? '課題を編集' : '課題を追加' })} />
+      <Stack.Screen name="ManabaLogin" component={ManabaLoginScreen} options={{ title: 'manabaにログイン', gestureEnabled: false }} />
     </Stack.Navigator>
   </NavigationContainer>;
 }

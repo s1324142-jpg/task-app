@@ -1,5 +1,5 @@
 import { Assignment } from './models';
-import { DAY, HOUR } from './dates';
+import { DAY, HOUR, dayDifference } from './dates';
 
 export function priorityScore(assignment: Assignment, now: Date): number {
   if (assignment.status === 'submitted') return -Infinity;
@@ -11,15 +11,23 @@ export function priorityScore(assignment: Assignment, now: Date): number {
   return urgency + effort + assignment.importance * 10 + (assignment.doToday ? 100 : 0);
 }
 export function todayAssignments(assignments: Assignment[], now: Date): Assignment[] {
-  return assignments.filter(a => a.status !== 'submitted' && (a.doToday || new Date(a.deadline).getTime() - now.getTime() <= 3 * DAY || priorityScore(a, now) >= 70))
+  return todoAssignments(assignments, now).shouldDoToday;
+}
+export function todoAssignments(assignments: Assignment[], now: Date): { shouldDoToday: Assignment[]; flexible: Assignment[] } {
+  const active = assignments.filter(a => a.status !== 'submitted')
     .sort((a, b) => priorityScore(b, now) - priorityScore(a, now) || Date.parse(a.deadline) - Date.parse(b.deadline) || a.id.localeCompare(b.id));
+  const shouldDoToday = active.filter(a => a.doToday || dayDifference(a.deadline, now) <= 1);
+  const ids = new Set(shouldDoToday.map(a => a.id));
+  return { shouldDoToday, flexible: active.filter(a => !ids.has(a.id)) };
 }
 export function priorityReason(a: Assignment, now: Date): string {
-  if (a.doToday) return '自分で今日やるに追加';
+  if (a.doToday) return '自分で今日やるべきことに追加';
   if (a.status === 'completed') return '完成しています。提出を忘れずに';
   const remaining = new Date(a.deadline).getTime() - now.getTime();
+  const days = dayDifference(a.deadline, now);
   if (remaining <= 0) return '締切を過ぎています。提出状況を確認';
-  if (remaining <= DAY) return '24時間以内に締切';
+  if (days === 0) return '今日が提出期限';
+  if (days === 1) return '明日が提出期限のため自動追加';
   if ((a.estimatedMinutes ?? 0) >= 120) return '時間がかかる課題を早めに';
-  return '締切と重要度からおすすめ';
+  return '提出期限まで余裕あり';
 }
