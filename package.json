@@ -11,6 +11,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm test",
     "build:android": "npx eas-cli build --platform android --profile preview",
+    "build:android:apk": "bash scripts/build-android-apk.sh",
     "web": "expo start --web",
     "build:web": "expo export --platform web --output-dir dist-web"
   },
