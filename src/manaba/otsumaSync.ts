@@ -33,25 +33,32 @@ export function parseManabaDeadline(text: string, now = new Date()): string | nu
   const normalized = text.replace(/[\u00a0\u3000]/g, ' ').replace(/\s+/g, ' ');
   // 一覧行には受付開始と受付終了が併記される。終了・締切ラベル以降を
   // 先に解析し、開始日時を締切として取り込まないようにする。
-  const deadlineLabel = /受付終了(?:日時)?|提出期限|締切(?:日時)?/g;
+  const deadlineLabel = /受付終了(?:日時)?|終了日時|提出期限|回答期限|締切(?:日時)?/g;
   const labels = Array.from(normalized.matchAll(deadlineLabel));
   const lastLabel = labels[labels.length - 1];
   const deadlineText = lastLabel?.index === undefined
     ? normalized
     : normalized.slice(lastLabel.index + lastLabel[0].length);
-  const withYear = deadlineText.match(/(20\d{2})\s*(?:年|[\/.\-])\s*(\d{1,2})\s*(?:月|[\/.\-])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
-  const withoutYear = deadlineText.match(/(?:^|\D)(\d{1,2})\s*(?:月|[\/\.])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
+  const datePattern = /(?:(20\d{2})\s*(?:年|[\/.\-])\s*)?(\d{1,2})\s*(?:月|[\/.\-])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/g;
+  const matches = Array.from(deadlineText.matchAll(datePattern));
+  // 「受付期間 9/1 09:00 ～ 9/18 23:59」のように終了ラベルがない
+  // 範囲表示では、後ろの日時が受付終了日時になる。
+  const isRange = lastLabel?.index === undefined
+    && matches.length > 1
+    && (/受付(?:期間|開始|日時)/.test(deadlineText) || /[～〜~]/.test(deadlineText));
+  const match = isRange ? matches[matches.length - 1] : matches[0];
+  if (!match) return null;
   let year: number;
   let month: number;
   let day: number;
   let hour: number;
   let minute: number;
-  if (withYear) {
-    year = Number(withYear[1]); month = Number(withYear[2]); day = Number(withYear[3]);
-    hour = Number(withYear[4]); minute = Number(withYear[5]);
-  } else if (withoutYear) {
-    month = Number(withoutYear[1]); day = Number(withoutYear[2]);
-    hour = Number(withoutYear[3]); minute = Number(withoutYear[4]);
+  if (match[1]) {
+    year = Number(match[1]); month = Number(match[2]); day = Number(match[3]);
+    hour = Number(match[4]); minute = Number(match[5]);
+  } else {
+    month = Number(match[2]); day = Number(match[3]);
+    hour = Number(match[4]); minute = Number(match[5]);
     // 年が省略される表示では、現在から最も近い年度を選ぶ。
     const currentYear = now.getUTCFullYear();
     const candidates = [currentYear - 1, currentYear, currentYear + 1];
@@ -60,7 +67,7 @@ export function parseManabaDeadline(text: string, now = new Date()): string | nu
       const diff = Math.abs(Date.parse(`${candidate}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00+09:00`) - now.getTime());
       return diff < bestDiff ? candidate : best;
     });
-  } else return null;
+  }
   if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
   const iso = `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00+09:00`;
   const parsed = new Date(iso);
