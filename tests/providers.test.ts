@@ -31,6 +31,7 @@ describe('manaba同期', () => {
   });
   it('大妻manabaの日本語締切をJSTのISO日時へ変換する', () => {
     expect(parseManabaDeadline('受付終了日時 2026年9月18日(金) 23:59')).toBe('2026-09-18T23:59:00+09:00');
+    expect(parseManabaDeadline('受付開始日時 2026年9月1日(火) 09:00 受付終了日時 2026年9月18日(金) 23:59')).toBe('2026-09-18T23:59:00+09:00');
     expect(parseManabaDeadline('期限 2026/02/30 12:00')).toBeNull();
     expect(parseManabaDeadline('締切なし')).toBeNull();
   });

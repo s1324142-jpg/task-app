@@ -31,8 +31,16 @@ const pad = (value: number) => String(value).padStart(2, '0');
 /** manabaの日本語表記を、端末のタイムゾーンに依存しない日本時間ISOへ変換する。 */
 export function parseManabaDeadline(text: string, now = new Date()): string | null {
   const normalized = text.replace(/[\u00a0\u3000]/g, ' ').replace(/\s+/g, ' ');
-  const withYear = normalized.match(/(20\d{2})\s*(?:年|[\/.\-])\s*(\d{1,2})\s*(?:月|[\/.\-])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
-  const withoutYear = normalized.match(/(?:^|\D)(\d{1,2})\s*(?:月|[\/\.])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
+  // 一覧行には受付開始と受付終了が併記される。終了・締切ラベル以降を
+  // 先に解析し、開始日時を締切として取り込まないようにする。
+  const deadlineLabel = /受付終了(?:日時)?|提出期限|締切(?:日時)?/g;
+  const labels = Array.from(normalized.matchAll(deadlineLabel));
+  const lastLabel = labels[labels.length - 1];
+  const deadlineText = lastLabel?.index === undefined
+    ? normalized
+    : normalized.slice(lastLabel.index + lastLabel[0].length);
+  const withYear = deadlineText.match(/(20\d{2})\s*(?:年|[\/.\-])\s*(\d{1,2})\s*(?:月|[\/.\-])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
+  const withoutYear = deadlineText.match(/(?:^|\D)(\d{1,2})\s*(?:月|[\/\.])\s*(\d{1,2})\s*日?(?:\s*\([^)]*\))?\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
   let year: number;
   let month: number;
   let day: number;
