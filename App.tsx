@@ -62,7 +62,7 @@ function Root() {
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="Detail" component={DetailScreen} options={{ title: '課題詳細' }} />
       <Stack.Screen name="Editor" component={EditorScreen} options={({ route }) => ({ title: route.params?.id ? '課題を編集' : '課題を追加' })} />
-      <Stack.Screen name="ManabaLogin" component={ManabaLoginScreen} options={{ title: 'manabaにログイン', gestureEnabled: false }} />
+      <Stack.Screen name="ManabaLogin" component={ManabaLoginScreen} options={({ route }) => ({ title: route.params.mode === 'sync' ? 'manaba課題を同期' : 'manabaにログイン', gestureEnabled: false })} />
     </Stack.Navigator>
   </NavigationContainer>;
 }
