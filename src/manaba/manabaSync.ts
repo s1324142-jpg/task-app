@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import { ExternalAssignment } from '../providers/AssignmentProvider';
 
-export const OTSUMA_MANABA_URL = 'https://otsuma.manaba.jp/ct/home';
-
 const scrapedRecordSchema = z.object({
   externalId: z.string().min(1).max(500),
   courseName: z.string().min(1).max(300),
@@ -27,6 +25,14 @@ export function parseManabaSyncMessage(value: unknown): ManabaSyncMessage | null
 }
 
 const pad = (value: number) => String(value).padStart(2, '0');
+
+// 課題URLの直前部分が、その課題を持つ授業トップのパスになる。
+// 例: /ct/course_123_report_456 -> /ct/course_123
+const MANABA_TASK_PATH_PATTERN = /^(\/ct\/course_.+?)_(query|survey|report|project)_[^/?#]+/i;
+
+export function coursePathFromTaskPath(pathname: string): string | null {
+  return pathname.match(MANABA_TASK_PATH_PATTERN)?.[1] ?? null;
+}
 
 /** manabaの日本語表記を、端末のタイムゾーンに依存しない日本時間ISOへ変換する。 */
 export function parseManabaDeadline(text: string, now = new Date()): string | null {
@@ -99,11 +105,11 @@ export function toExternalAssignments(message: ManabaSyncMessage, now = new Date
 }
 
 // WebView内の同一オリジンだけを取得する。HTMLやフォーム入力値はReact Native側へ送らない。
-export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
+export const EXTRACT_MANABA_ASSIGNMENTS = `(() => {
   const post = value => window.ReactNativeWebView.postMessage(JSON.stringify(value));
   const clean = value => String(value || '').replace(/[\\u00a0\\u3000]/g, ' ').replace(/\\s+/g, ' ').trim();
   const types = ['query', 'survey', 'report', 'project'];
-  const taskPattern = /\\/ct\\/course_[^/?#]+_(query|survey|report|project)_[^/?#]+/i;
+  const taskPattern = ${MANABA_TASK_PATH_PATTERN};
   const summaryPattern = /\\/ct\\/home_summary_(query|survey|report|project)/i;
   const requiresAuthentication = (doc, pageUrl) => {
     if (doc.querySelector('input[type="password"]')) return true;
@@ -111,7 +117,6 @@ export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
     try { path = new URL(pageUrl).pathname; } catch (_) { /* invalid URL is handled elsewhere */ }
     return Boolean(doc.querySelector('form')) && /ログイン|sign[ -]?in|login/i.test(clean(doc.title) + ' ' + path);
   };
-  const isCourseLink = href => /\\/ct\\/course_/i.test(href) && !taskPattern.test(href);
   const findContainer = anchor => {
     const explicit = anchor.closest('tr, li, article, [class*="list-item"], [class*="list_item"], [class*="content-list"], [class*="content_list"]');
     if (explicit) return explicit;
@@ -129,14 +134,23 @@ export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
       const href = new URL(anchor.getAttribute('href'), pageUrl);
       const match = href.pathname.match(taskPattern);
       if (!match || href.origin !== window.location.origin) continue;
+      const coursePath = match[1].replace(/\\/+$/, '');
       const externalId = href.pathname.replace(/\\/+$/, '');
       if (seen.has(externalId)) continue;
       const container = findContainer(anchor);
       if (!container) continue;
       const assignmentTitle = clean(anchor.textContent || anchor.getAttribute('title') || anchor.getAttribute('aria-label')).slice(0, 500);
-      const courseAnchor = Array.from(container.querySelectorAll('a[href]')).find(candidate => {
-        try { return isCourseLink(new URL(candidate.getAttribute('href'), pageUrl).pathname); } catch { return false; }
-      });
+      // 「レポート」「アンケート」などのカテゴリリンクも /ct/course_ で
+      // 始まるため、単なる前方一致では授業名として誤取得する。課題URLから
+      // 導いた授業トップのパスと完全一致するリンクだけを採用する。
+      const isMatchingCourseLink = candidate => {
+        try {
+          const candidateUrl = new URL(candidate.getAttribute('href'), pageUrl);
+          return candidateUrl.origin === window.location.origin && candidateUrl.pathname.replace(/\\/+$/, '') === coursePath;
+        } catch { return false; }
+      };
+      const courseAnchor = Array.from(container.querySelectorAll('a[href]')).find(isMatchingCourseLink)
+        || Array.from(doc.querySelectorAll('a[href]')).find(isMatchingCourseLink);
       const courseElement = container.querySelector('[class*="course-name"], [class*="course_name"], [class*="coursename"], [class*="course-title"], [class*="course_title"]');
       const deadlineText = clean(container.textContent).slice(0, 2000);
       const fullStart = deadlineText.lastIndexOf('［');
@@ -146,13 +160,16 @@ export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
       const bracketCourse = fullStart >= 0 && fullEnd > fullStart && fullEnd - fullStart <= 301
         ? deadlineText.slice(fullStart + 1, fullEnd)
         : asciiStart >= 0 && asciiEnd > asciiStart && asciiEnd - asciiStart <= 301 ? deadlineText.slice(asciiStart + 1, asciiEnd) : '';
-      const courseName = clean((courseAnchor && courseAnchor.textContent) || (courseElement && courseElement.textContent) || bracketCourse).slice(0, 300);
+      const categoryLabel = /^(?:小テスト|アンケート|レポート|プロジェクト|query|survey|report|project)$/i;
+      const courseName = [courseAnchor && courseAnchor.textContent, courseElement && courseElement.textContent, bracketCourse]
+        .map(clean)
+        .find(value => value && !categoryLabel.test(value));
       if (!assignmentTitle || !courseName || !deadlineText) continue;
       const submitted = /提出済|回答済|採点済|受付済|提出完了/.test(deadlineText);
       seen.add(externalId);
       rows.push({
         externalId,
-        courseName,
+        courseName: courseName.slice(0, 300),
         assignmentTitle,
         deadlineText,
         assignmentUrl: href.toString().split('#')[0],

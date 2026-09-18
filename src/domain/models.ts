@@ -5,6 +5,12 @@ export const statusLabels: Record<Status, string> = {
   not_started: '未着手', in_progress: '作業中', completed: '完了・未提出', submitted: '提出済み',
 };
 export type Status = typeof statuses[number];
+export const assignmentTypes = ['query', 'survey', 'report', 'project'] as const;
+export const assignmentTypeSchema = z.enum(assignmentTypes);
+export type AssignmentType = z.infer<typeof assignmentTypeSchema>;
+export const assignmentTypeLabels: Record<AssignmentType, string> = {
+  query: '小テスト', survey: 'アンケート', report: 'レポート', project: 'プロジェクト',
+};
 export const courseSchema = z.object({
   id: z.string().min(1), name: z.string().trim().min(1).max(120),
   color: z.string().optional(), provider: z.enum(['manual', 'manaba']).default('manual'),
@@ -14,6 +20,7 @@ export const assignmentSchema = z.object({
   id: z.string().min(1), provider: z.enum(['manual', 'manaba']), externalId: z.string().optional(),
   courseId: z.string().min(1), courseName: z.string().trim().min(1).max(120),
   title: z.string().trim().min(1).max(200), description: z.string().max(10000).optional(),
+  assignmentType: assignmentTypeSchema.optional(),
   deadline: z.string().datetime({ offset: true }), status: z.enum(statuses),
   estimatedMinutes: z.number().int().min(1).max(100000).optional(),
   importance: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
@@ -47,4 +54,4 @@ export const emptyData = (): AppData => ({
   version: 1, assignments: [], courses: [],
   settings: { sevenDays: true, threeDays: true, oneDay: true, sameDay: true, threeHours: true, dailyHour: 9 },
 });
-export type AssignmentInput = Pick<Assignment, 'title' | 'courseName' | 'deadline' | 'status' | 'estimatedMinutes' | 'importance' | 'doToday' | 'sourceUrl' | 'description' | 'memo'>;
+export type AssignmentInput = Pick<Assignment, 'title' | 'courseName' | 'assignmentType' | 'deadline' | 'status' | 'estimatedMinutes' | 'importance' | 'doToday' | 'sourceUrl' | 'description' | 'memo'>;

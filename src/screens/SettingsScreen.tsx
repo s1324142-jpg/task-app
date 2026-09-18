@@ -11,7 +11,6 @@ import { useTheme } from '../themes/ThemeContext';
 import { RootNavigation } from '../navigation/types';
 import { MANABA_RELOGIN_REQUIRED, ManabaAuthError, ManabaSession } from '../manaba/ManabaAuthService';
 import { manabaAuth } from '../manaba/manabaNative';
-import { OTSUMA_MANABA_URL } from '../manaba/otsumaSync';
 import { useAuth } from '../cloud/AuthContext';
 
 export function SettingsScreen() {
@@ -19,14 +18,14 @@ export function SettingsScreen() {
   const auth = useAuth();
   const { data, change, warning, refresh, cloudSyncState, cloudError, lastCloudSyncAt, retryCloudSync } = useApp(); const [busy, setBusy] = useState(false);
   const navigation = useNavigation<RootNavigation>();
-  const [manabaUrl, setManabaUrl] = useState(OTSUMA_MANABA_URL);
+  const [manabaUrl, setManabaUrl] = useState('');
   const [manabaSession, setManabaSession] = useState<ManabaSession | null>(null);
   const [manabaError, setManabaError] = useState<string | null>(null);
   const loadManaba = useCallback(async () => {
     if (Platform.OS === 'web') return;
     try {
       const session = await manabaAuth.getSession();
-      setManabaSession(session); setManabaUrl(session?.baseUrl ?? OTSUMA_MANABA_URL); setManabaError(null);
+      setManabaSession(session); setManabaUrl(session?.baseUrl ?? ''); setManabaError(null);
     } catch { setManabaError('manaba連携情報を読み込めませんでした。'); }
   }, []);
   useFocusEffect(useCallback(() => { void loadManaba(); }, [loadManaba]));
@@ -63,7 +62,7 @@ export function SettingsScreen() {
         assignments: state.assignments.filter(assignment => assignment.provider !== 'manaba'),
         courses: state.courses.filter(course => course.provider !== 'manaba' || state.assignments.some(assignment => assignment.provider === 'manual' && assignment.courseId === course.id)),
       }));
-      setManabaSession(null); setManabaUrl(OTSUMA_MANABA_URL);
+      setManabaSession(null); setManabaUrl('');
     } catch { setManabaError('manabaのCookieまたは連携情報を削除できませんでした。再試行してください。'); }
     finally { setBusy(false); }
   };
@@ -103,7 +102,7 @@ export function SettingsScreen() {
       <View style={s.spread}><Text style={s.text}>接続状態</Text><Text style={[s.text, { color: manabaSession?.status === 'connected' ? colors.green : colors.amber }]}>{connectionLabel}</Text></View>
       <Text style={s.label}>manaba URL</Text>
       <TextInput accessibilityLabel="manaba URL" autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://..." value={manabaUrl} onChangeText={setManabaUrl} editable={!busy} selectTextOnFocus style={s.input} />
-      <Text style={s.muted}>大妻女子大学の公式manaba URLです。IDやパスワードは入力・保存しません。</Text>
+      <Text style={s.muted}>大学から案内されたmanabaのURLを入力してください。IDやパスワードは入力・保存しません。</Text>
       {manabaError && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{manabaError}</Text>}
       <Button disabled={busy || !manabaUrl.trim()} title={manabaSession?.status === 'connected' ? 'manabaに再ログイン' : 'manabaにログイン'} onPress={() => { void openManabaLogin('login'); }} />
       <Button disabled={busy || Platform.OS === 'web' || !manabaSession} secondary title="ログイン状態を確認" onPress={() => {
@@ -116,7 +115,7 @@ export function SettingsScreen() {
       }} />
       <Button disabled={busy || Platform.OS === 'web' || !manabaSession} secondary title="ログアウト / 連携解除" onPress={confirmLogout} />
       <Text style={s.muted}>最終同期: {formatDate(manabaSession?.lastSyncAt)}</Text>
-      <Text style={s.muted}>{Platform.OS === 'web' ? 'manaba連携はAndroid / iOSアプリで利用できます。' : '同期は大妻女子大学manabaの提出物一覧を端末内で解析します。CookieやページのHTMLはアプリの保存領域へコピーしません。'}</Text>
+      <Text style={s.muted}>{Platform.OS === 'web' ? 'manaba連携はAndroid / iOSアプリで利用できます。' : '同期はmanabaの提出物一覧を端末内で解析します。CookieやページのHTMLはアプリの保存領域へコピーしません。'}</Text>
     </View>
     <View style={s.card}><Text style={s.heading}>保存について</Text><Text style={s.muted}>課題はこの端末に保存され、オフラインでも確認・編集できます。アプリの削除やデータ消去で失われます。通知は端末の権限・省電力設定によって遅れる場合があります。</Text></View>
     <Text style={[s.muted, { textAlign: 'center' }]}>QUEUE · Version 0.1.0{'\n'}毎日の学びに、少しのゆとりを。</Text>

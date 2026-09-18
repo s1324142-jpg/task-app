@@ -4,7 +4,7 @@ import { Linking, ScrollView, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../state/AppContext';
 import { RootStackParams } from '../navigation/types';
-import { Status, statuses, statusLabels } from '../domain/models';
+import { Status, assignmentTypeLabels, statuses, statusLabels } from '../domain/models';
 import { dayDifference, deadlineLabel, relativeDeadline } from '../domain/dates';
 import { Button, Chips, Empty, reportError } from '../ui/components';
 import { useTheme } from '../themes/ThemeContext';
@@ -36,7 +36,7 @@ export function DetailScreen({ route, navigation }: NativeStackScreenProps<RootS
     } catch { Alert.alert('ページを開けませんでした', '課題URLと端末のブラウザ設定を確認してください。'); }
   };
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
-    <Text style={[s.muted, { color: colors.green }]}>{a.courseName}</Text><Text style={s.title}>{a.title}</Text>
+    <View style={[s.row, { flexWrap: 'wrap' }]}>{a.assignmentType && <View style={s.chip}><Text style={[s.muted, { color: colors.green }]}>{assignmentTypeLabels[a.assignmentType]}</Text></View>}<Text style={[s.muted, { color: colors.green }]}>{a.courseName}</Text></View><Text style={s.title}>{a.title}</Text>
     <View style={s.card}><Text style={s.muted}>締切日時</Text><Text style={s.heading}>{deadlineLabel(a.deadline)}</Text><Text style={[s.text, { color: a.status === 'submitted' ? colors.green : colors.red }]}>{a.status === 'submitted' ? '提出済み' : relativeDeadline(a.deadline, now)}</Text></View>
     <View style={{ gap: 10 }}><Text style={s.heading}>進捗・提出状況</Text><View pointerEvents={busy ? 'none' : 'auto'}><Chips value={a.status} options={statuses.map(value => ({ value, label: statusLabels[value] }))} onChange={status => { void update({ status }); }} /></View>
       <Text style={s.muted}>「完了」は作業が終わった状態です。manabaに提出したら「提出済み」にしてください。</Text></View>

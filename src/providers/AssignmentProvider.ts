@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assignmentTypeSchema } from '../domain/models';
 
 export const externalAssignmentSchema = z.object({
   externalId: z.string().optional(),
@@ -6,7 +7,7 @@ export const externalAssignmentSchema = z.object({
   assignmentTitle: z.string().optional(),
   deadline: z.string().optional(),
   assignmentUrl: z.string().optional(),
-  assignmentType: z.string().optional(),
+  assignmentType: assignmentTypeSchema.optional(),
   submissionStatus: z.enum(['submitted', 'not_submitted']).optional(),
 });
 export type ExternalAssignment = z.infer<typeof externalAssignmentSchema>;

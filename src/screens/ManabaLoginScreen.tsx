@@ -8,7 +8,7 @@ import { Alert } from '../ui/alerts';
 import { RootStackParams } from '../navigation/types';
 import { LoginPageObservation, MANABA_RELOGIN_REQUIRED, ManabaAuthError } from '../manaba/ManabaAuthService';
 import { manabaAuth } from '../manaba/manabaNative';
-import { EXTRACT_OTSUMA_ASSIGNMENTS, ManabaSyncMessage, parseManabaSyncMessage, toExternalAssignments } from '../manaba/otsumaSync';
+import { EXTRACT_MANABA_ASSIGNMENTS, ManabaSyncMessage, parseManabaSyncMessage, toExternalAssignments } from '../manaba/manabaSync';
 import { mergeExternalAssignments } from '../providers/merge';
 import { useApp } from '../state/AppContext';
 import { Button } from '../ui/components';
@@ -131,7 +131,7 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
     try {
       await manabaAuth.completeLogin(observed);
       syncPending.current = true;
-      webView.current?.injectJavaScript(EXTRACT_OTSUMA_ASSIGNMENTS);
+      webView.current?.injectJavaScript(EXTRACT_MANABA_ASSIGNMENTS);
     } catch (cause) {
       setBusy(false);
       if (cause instanceof ManabaAuthError && (cause.code === 'authentication_failed' || cause.code === 'session_expired')) {

@@ -10,7 +10,6 @@ import { AssignmentCard, Button, Empty, PageTitle } from '../ui/components';
 import { useTheme } from '../themes/ThemeContext';
 import { MANABA_RELOGIN_REQUIRED, ManabaSession } from '../manaba/ManabaAuthService';
 import { manabaAuth } from '../manaba/manabaNative';
-import { OTSUMA_MANABA_URL } from '../manaba/otsumaSync';
 
 export function HomeScreen() {
   const { theme, styles: s } = useTheme(); const colors = theme.colors;
@@ -47,8 +46,8 @@ export function HomeScreen() {
     try {
       const session = await manabaAuth.getSession();
       if (!session) {
-        const baseUrl = await manabaAuth.configure(OTSUMA_MANABA_URL);
-        nav.navigate('ManabaLogin', { baseUrl, mode: 'login' });
+        setManabaError('設定で大学指定のmanaba URLを入力してください。');
+        nav.navigate('Main', { screen: 'Settings' });
       } else if (session.status === 'expired') {
         setManabaError(MANABA_RELOGIN_REQUIRED);
         nav.navigate('ManabaLogin', { baseUrl: session.baseUrl, authenticatedOrigin: session.authenticatedOrigin, mode: 'login' });
@@ -63,7 +62,7 @@ export function HomeScreen() {
     {manabaSession?.status === 'expired' && <Text accessibilityRole="alert" style={[s.text, { color: colors.amber }]}>{MANABA_RELOGIN_REQUIRED}</Text>}
     {manabaError && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{manabaError}</Text>}
     <Text style={s.muted}>取得に失敗しても、前回取得した課題は端末とFirestoreに残ります。</Text>
-    <Button disabled={manabaBusy || Platform.OS === 'web'} title={manabaBusy ? '確認中…' : manabaSession?.status === 'connected' ? 'manaba課題を同期' : manabaSession ? 'manabaへ再ログイン' : 'manabaへログイン'} onPress={() => { void openManaba(); }} />
+    <Button disabled={manabaBusy || Platform.OS === 'web'} title={manabaBusy ? '確認中…' : manabaSession?.status === 'connected' ? 'manaba課題を同期' : manabaSession ? 'manabaへ再ログイン' : 'manaba URLを設定'} onPress={() => { void openManaba(); }} />
   </View>;
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
     <PageTitle title="QUEUE" subtitle={date} onAdd={() => nav.navigate('Editor')} />
