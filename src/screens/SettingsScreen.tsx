@@ -76,7 +76,7 @@ export function SettingsScreen() {
   const formatDate = (value?: string) => value ? new Date(value).toLocaleString('ja-JP') : '未同期';
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
     <PageTitle title="設定" subtitle="自分のペースに、合わせよう。" />
-    {theme.id === 'sparklePink' && <View style={[s.card, { flexDirection: 'row', alignItems: 'center' }]}><MascotImage size={64} /><View style={{ flex: 1, gap: 4 }}><Text style={s.heading}>sukeユーザーさん♡</Text><Text style={s.muted}>かわいく、楽しく、今日も一歩ずつ。</Text></View></View>}
+    {theme.id === 'sparklePink' && <View style={[s.card, { flexDirection: 'row', alignItems: 'center' }]}><MascotImage size={64} /><View style={{ flex: 1, gap: 4 }}><Text style={s.heading}>QUEUEユーザーさん♡</Text><Text style={s.muted}>かわいく、楽しく、今日も一歩ずつ。</Text></View></View>}
     <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Theme')} style={s.card}>
       <View style={s.spread}><View style={[s.row, { flex: 1 }]}><View style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.pale }}><Feather name="image" size={20} color={colors.green} /></View><View style={{ flex: 1 }}><Text style={s.heading}>テーマ・壁紙</Text><Text style={s.muted}>使用中：{theme.name}</Text></View></View><Feather name="chevron-right" size={21} color={colors.muted} /></View>
     </Pressable>
@@ -119,6 +119,6 @@ export function SettingsScreen() {
       <Text style={s.muted}>{Platform.OS === 'web' ? 'manaba連携はAndroid / iOSアプリで利用できます。' : '同期は大妻女子大学manabaの提出物一覧を端末内で解析します。CookieやページのHTMLはアプリの保存領域へコピーしません。'}</Text>
     </View>
     <View style={s.card}><Text style={s.heading}>保存について</Text><Text style={s.muted}>課題はこの端末に保存され、オフラインでも確認・編集できます。アプリの削除やデータ消去で失われます。通知は端末の権限・省電力設定によって遅れる場合があります。</Text></View>
-    <Text style={[s.muted, { textAlign: 'center' }]}>suke · Version 0.1.0{'\n'}毎日の学びに、少しのゆとりを。</Text>
+    <Text style={[s.muted, { textAlign: 'center' }]}>QUEUE · Version 0.1.0{'\n'}毎日の学びに、少しのゆとりを。</Text>
   </ScrollView>;
 }

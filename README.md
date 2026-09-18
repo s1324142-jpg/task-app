@@ -1,4 +1,4 @@
-# suke — manaba課題管理スマホアプリ
+# QUEUE — manaba課題管理スマホアプリ
 
 Expo / React Native / TypeScriptによるAndroid向けVersion 0.1。手動登録した課題を端末に保存し、TODO・締切・提出状況を管理します。Androidアプリを主対象とし、PCで画面・操作を確認するブラウザープレビューも用意しています。
 
@@ -43,7 +43,7 @@ npm run android
 
 ### GitHub Actionsで自動生成
 
-`main`ブランチへpushすると、型チェックとテストの後に最新ソースからAPKを自動生成します。GitHubの「Actions」→「Build Android APK」→完了した実行を開き、Artifactsの`suke-android-apk`をダウンロードしてください。手動実行する場合は同画面の「Run workflow」を押します。
+`main`ブランチへpushすると、型チェックとテストの後に最新ソースからAPKを自動生成します。GitHubの「Actions」→「Build Android APK」→完了した実行を開き、Artifactsの`queue-android-apk`をダウンロードしてください。手動実行する場合は同画面の「Run workflow」を押します。
 
 ダウンロードしたZIPを展開すると`app-release.apk`があります。Android端末へ送り、端末が表示する「この提供元を許可」に従ってインストールします。この自動生成APKは開発用鍵で署名する個人テスト向けです。Google Playでの配布には専用のリリース署名が必要です。
 

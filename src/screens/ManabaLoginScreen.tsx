@@ -146,7 +146,7 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
 
   return <View style={s.screen}>
     <View style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-      <Text style={s.muted}>{route.params.mode === 'sync' ? '提出物一覧から授業名・課題名・締切・提出状態を端末内で読み取ります。' : '大学の画面で認証してください。入力内容やCookieをsukeが読み取ることはありません。'}</Text>
+      <Text style={s.muted}>{route.params.mode === 'sync' ? '提出物一覧から授業名・課題名・締切・提出状態を端末内で読み取ります。' : '大学の画面で認証してください。入力内容やCookieをQUEUEが読み取ることはありません。'}</Text>
       {observation?.title ? <Text numberOfLines={1} style={s.text}>{observation.title}</Text> : null}
       {error && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{error}</Text>}
       <View style={s.row}>

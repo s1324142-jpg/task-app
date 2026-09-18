@@ -66,7 +66,7 @@ export function HomeScreen() {
     <Button disabled={manabaBusy || Platform.OS === 'web'} title={manabaBusy ? '確認中…' : manabaSession?.status === 'connected' ? 'manaba課題を同期' : manabaSession ? 'manabaへ再ログイン' : 'manabaへログイン'} onPress={() => { void openManaba(); }} />
   </View>;
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
-    <PageTitle title="suke" subtitle={date} onAdd={() => nav.navigate('Editor')} />
+    <PageTitle title="QUEUE" subtitle={date} onAdd={() => nav.navigate('Editor')} />
     <View style={{ backgroundColor: colors.green, borderRadius: 28, padding: 24, gap: 18, overflow: 'hidden' }}>
       <Animated.View pointerEvents="none" style={{ position: 'absolute', right: -18, top: -22, width: 110, height: 110, borderRadius: 60, backgroundColor: '#79A995', opacity: 0.35, transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) }] }} />
       <View style={s.spread}><Text style={{ color: '#CEE3D7', fontSize: 12, letterSpacing: 2 }}>YOUR STUDY, AT A GLANCE</Text><Animated.View style={{ transform: [{ rotate: float.interpolate({ inputRange: [0, 1], outputRange: ['-8deg', '8deg'] }) }] }}><Feather name="sun" size={22} color="#D5E6B4" /></Animated.View></View>

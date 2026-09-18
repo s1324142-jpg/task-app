@@ -61,7 +61,7 @@ function Root() {
     return () => subscription.remove();
   }, [handleResponse]);
   if (error) return <SafeAreaView style={[s.screen, s.content, { justifyContent: 'center' }]}><Text style={s.heading}>読み込みに失敗しました</Text><Text style={s.text}>{error}</Text><Button title="再試行" onPress={() => { void retry(); }} /></SafeAreaView>;
-  if (!data) return <View style={[s.screen, { alignItems: 'center', justifyContent: 'center', gap: 20 }]}><Text style={s.title}>suke</Text><ActivityIndicator color={colors.green} accessibilityLabel="読み込み中" /></View>;
+  if (!data) return <View style={[s.screen, { alignItems: 'center', justifyContent: 'center', gap: 20 }]}><Text style={s.title}>QUEUE</Text><ActivityIndicator color={colors.green} accessibilityLabel="読み込み中" /></View>;
   return <ThemeBackground><NavigationContainer ref={navigation} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: colors.green, background: theme.decoration === 'sparkle' ? 'transparent' : colors.background, card: colors.paper, text: colors.ink, border: colors.border } }} onReady={() => {
     if (pending.current) { navigation.navigate('Detail', { id: pending.current }); pending.current = null; }
   }}>

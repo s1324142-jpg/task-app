@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "suke 課題管理",
-    "slug": "suke-assignments",
+    "name": "QUEUE",
+    "slug": "queue-assignments",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "suke",
+    "scheme": "queue",
     "android": {
       "package": "jp.suke.assignments",
       "googleServicesFile": "./google-services.json",
