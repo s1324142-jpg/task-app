@@ -5,7 +5,7 @@ import DateTimePicker, { DateTimePickerEvent } from '../ui/DateTimePicker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../state/AppContext';
 import { RootStackParams } from '../navigation/types';
-import { Assignment, AssignmentType, assignmentSchema, assignmentTypeLabels, assignmentTypes, statuses, statusLabels } from '../domain/models';
+import { Assignment, assignmentSchema, statuses, statusLabels } from '../domain/models';
 import { deadlineLabel } from '../domain/dates';
 import { Button, Chips, Empty, reportError } from '../ui/components';
 import { useTheme } from '../themes/ThemeContext';
@@ -16,7 +16,6 @@ export function EditorScreen({ route, navigation }: NativeStackScreenProps<RootS
   const existing = data?.assignments.find(a => a.id === id);
   const [title, setTitle] = useState(existing?.title ?? '');
   const [courseName, setCourseName] = useState(existing?.courseName ?? '');
-  const [assignmentType, setAssignmentType] = useState<AssignmentType | ''>(existing?.assignmentType ?? '');
   const [deadline, setDeadline] = useState(() => {
     if (existing) return new Date(existing.deadline);
     const date = new Date(); date.setHours(23, 59, 0, 0); return date;
@@ -38,7 +37,7 @@ export function EditorScreen({ route, navigation }: NativeStackScreenProps<RootS
   const persist = async () => {
     setBusy(true);
     try {
-      const savedId = await save({ title: title.trim(), courseName: courseName.trim(), assignmentType: assignmentType || undefined, deadline: deadline.toISOString(),
+      const savedId = await save({ title: title.trim(), courseName: courseName.trim(), deadline: deadline.toISOString(),
         status, importance, estimatedMinutes: estimated.trim() ? Number(estimated) : undefined,
         doToday, sourceUrl: url.trim() || undefined, memo: memo.trim() || undefined, description: description.trim() || undefined,
       }, id);
@@ -60,7 +59,6 @@ export function EditorScreen({ route, navigation }: NativeStackScreenProps<RootS
       <View><Text style={s.label}>課題名 *</Text><TextInput accessibilityLabel="課題名" value={title} onChangeText={setTitle} style={s.input} placeholder="例：レポート第3回" placeholderTextColor={colors.muted} maxLength={200} /></View>
       <View><Text style={s.label}>授業名 *</Text><TextInput accessibilityLabel="授業名" value={courseName} onChangeText={setCourseName} style={s.input} placeholder="例：情報ネットワーク論" placeholderTextColor={colors.muted} maxLength={120} /></View>
       {!!data?.courses.length && <Chips value={courseName} onChange={setCourseName} options={data.courses.map(c => ({ value: c.name, label: c.name }))} />}
-      <View><Text style={s.label}>課題種別</Text><Chips value={assignmentType} onChange={setAssignmentType} options={[{ value: '' as const, label: '未設定' }, ...assignmentTypes.map(value => ({ value, label: assignmentTypeLabels[value] }))]} /></View>
       <View style={{ gap: 10 }}><Text style={s.label}>締切日時 *</Text><Text style={s.text}>{deadlineLabel(deadline.toISOString())}</Text><View style={s.row}><View style={{ flex: 1 }}><Button secondary title="日付を選ぶ" onPress={() => setPicker('date')} /></View><View style={{ flex: 1 }}><Button secondary title="時刻を選ぶ" onPress={() => setPicker('time')} /></View></View></View>
       {picker && <View><DateTimePicker value={deadline} mode={picker} is24Hour display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={onDate} />{Platform.OS === 'ios' && <Button title="日時を決定" onPress={() => setPicker(null)} />}</View>}
       <View><Text style={s.label}>進捗・提出状況</Text><Chips value={status} onChange={setStatus} options={statuses.map(value => ({ value, label: statusLabels[value] }))} /></View>

@@ -14,12 +14,12 @@ Expo / React Native / TypeScriptによるAndroid向けVersion 0.1。手動登録
 - 5種類のローカル締切通知、設定ON/OFF、提出済み・削除時の予約取消し
 - 締切変更時の通知差分更新、通知タップから詳細への遷移
 - 保存失敗／読込失敗／通知設定失敗の表示と再試行
-- 任意の大学manabaへのWebViewログイン、OS Cookieによるセッション再利用、SecureStoreの接続状態、連携解除
+- 大妻女子大学manabaのWebViewログイン、OS Cookieによるセッション再利用、SecureStoreの接続状態、連携解除
 - 小テスト・アンケート・レポート・プロジェクト一覧の端末内解析と同期、重複防止・締切更新
 - Default / Sparkle Pinkのテーマ切り替え、プレビュー、端末内への選択保存
 - Firebase GoogleログインによるAndroid・Web間の課題データ同期（設定時のみ）
 
-設定で大学から案内されたmanaba URLを入力してログインすると、ホームの「manaba課題を同期」から提出物一覧を更新できます。アプリには特定大学のURLを初期登録しません。セッション切れを検知した場合は再ログインを案内し、前回取得済みの課題は端末とFirestoreに残します。解析と保存は取得に成功した場合だけ行い、生のHTML、フォーム入力値、Cookie、大学アカウントのID・パスワードはアプリのデータ領域やFirestoreへコピーしません。manaba側の画面変更や、締切が表示されない課題は解析できない場合があります。
+大妻女子大学manabaへログイン後、ホームの「manaba課題を同期」から提出物一覧を更新できます。セッション切れを検知した場合は再ログインを案内し、前回取得済みの課題は端末とFirestoreに残します。解析と保存は取得に成功した場合だけ行い、生のHTML、フォーム入力値、Cookie、大学アカウントのID・パスワードはアプリのデータ領域やFirestoreへコピーしません。manaba側の画面変更や、締切が表示されない課題は解析できない場合があります。
 
 ## 開発
 
@@ -123,7 +123,7 @@ npx expo export --platform android
 
 詳細は[設計](docs/architecture.md)と[実機チェックリスト](docs/device-checklist.md)を参照してください。実際に実行した検証と残作業は[検証結果](docs/verification.md)に記録します。
 
-現在の同期処理はmanaba標準の提出物一覧を対象にしています。大学ごとの画面構造やmanaba側の画面変更によって取得できない場合は、個人情報・Cookie・認証トークンを含まない形で実機上の表示を確認し、解析処理を更新します。
+現在の同期処理は大妻女子大学の公式URLとmanaba標準の提出物一覧を対象にしています。manaba側の画面構造が変わった場合は、個人情報・Cookie・認証トークンを含まない形で実機上の表示を確認し、解析処理を更新します。
 
 参照：[Expo SDK 55](https://expo.dev/changelog/sdk-55)、[Expo Notifications](https://docs.expo.dev/versions/v55.0.0/sdk/notifications/)、[APKビルド](https://docs.expo.dev/build-reference/apk/)、[ローカルビルド](https://docs.expo.dev/guides/local-app-production/)。
 

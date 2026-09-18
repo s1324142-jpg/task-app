@@ -25,7 +25,7 @@ export function mergeExternalAssignments(state: AppData, records: unknown[], uui
     const course = data.courses.find(c => c.name === courseName) ?? { id: uuid(), name: courseName, provider: 'manaba' as const, color: '#377E70' };
     const result = assignmentSchema.safeParse({
       ...old, id: old?.id ?? uuid(), provider: 'manaba', externalId,
-      courseId: course.id, courseName, title: row.assignmentTitle, assignmentType: row.assignmentType, deadline: row.deadline,
+      courseId: course.id, courseName, title: row.assignmentTitle, deadline: row.deadline,
       sourceUrl: sourceUrl ?? old?.sourceUrl,
       status: row.submissionStatus === 'submitted' ? 'submitted' : row.submissionStatus === 'not_submitted' && old?.status === 'submitted' ? 'not_started' : old?.status ?? 'not_started',
       importance: old?.importance ?? 3, doToday: old?.doToday ?? false,
@@ -35,8 +35,5 @@ export function mergeExternalAssignments(state: AppData, records: unknown[], uui
     if (!data.courses.some(c => c.id === course.id)) data.courses.push(course);
     if (index < 0) data.assignments.push(result.data); else data.assignments[index] = result.data;
   }
-  // 再同期で誤った授業名が訂正された場合、参照されなくなったmanaba授業を残さない。
-  const usedCourseIds = new Set(data.assignments.map(assignment => assignment.courseId));
-  data.courses = data.courses.filter(course => course.provider !== 'manaba' || usedCourseIds.has(course.id));
   return { data, skipped };
 }

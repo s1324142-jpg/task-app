@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Assignment, assignmentTypeLabels, statusLabels } from '../domain/models';
+import { Assignment, statusLabels } from '../domain/models';
 import { DAY, HOUR, deadlineLabel, relativeDeadline } from '../domain/dates';
 import { useTheme } from '../themes/ThemeContext';
 
@@ -42,11 +42,10 @@ export function AssignmentCard({ assignment: a, courseName = a.courseName, now, 
   useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 360, useNativeDriver: true }).start(); }, [entrance]);
   const diff = new Date(a.deadline).getTime() - now.getTime();
   const color = a.status === 'submitted' ? colors.muted : diff <= 24 * HOUR ? colors.red : diff <= 3 * DAY ? colors.amber : diff <= 7 * DAY ? colors.blue : colors.green;
-  const typeLabel = a.assignmentType ? assignmentTypeLabels[a.assignmentType] : undefined;
-  return <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }, { scale }] }}><Pressable accessibilityRole="button" accessibilityLabel={`${typeLabel ? `${typeLabel} ` : ''}${courseName} ${a.title} ${deadlineLabel(a.deadline)} ${statusLabels[a.status]}`} onPress={onPress}
+  return <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }, { scale }] }}><Pressable accessibilityRole="button" accessibilityLabel={`${courseName} ${a.title} ${deadlineLabel(a.deadline)} ${statusLabels[a.status]}`} onPress={onPress}
     onPressIn={() => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true }).start()} onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
     style={[s.card, { borderLeftWidth: 4, borderLeftColor: color }]}>
-    <View style={s.spread}><View style={[s.row, { flex: 1, flexWrap: 'wrap' }]}>{typeLabel && <View style={[s.chip, { minHeight: 28, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.pale }]}><Text style={[s.muted, { color: colors.green }]}>{typeLabel}</Text></View>}<Text numberOfLines={2} style={[s.muted, { flex: 1 }]}>{courseName}</Text></View><Feather name="chevron-right" size={18} color={colors.muted} /></View>
+    <View style={s.spread}>{theme.id === 'sparklePink' ? <View style={[s.chip, { minHeight: 28, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.pale }]}><Text style={[s.muted, { color: colors.green }]}>{courseName}</Text></View> : <Text style={[s.muted, { flex: 1 }]}>{courseName}</Text>}<Feather name="chevron-right" size={18} color={colors.muted} /></View>
     <Text style={[s.heading, { lineHeight: 26 }]}>{a.title}</Text>
     <Text style={[s.text, { color, fontSize: 13 }]}>{deadlineLabel(a.deadline)}まで</Text>
     <View style={[s.spread, { flexWrap: 'wrap' }]}>
