@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { priorityScore, todoAssignments, todayAssignments } from '../src/domain/priority';
 import { DAY, HOUR, dayDifference, dayKey, isThisWeek, monthDays, relativeDeadline } from '../src/domain/dates';
-import { upsertAssignment } from '../src/domain/assignments';
+import { courseNameForAssignment, upsertAssignment } from '../src/domain/assignments';
 import { assignmentSchema, emptyData, stateSchema } from '../src/domain/models';
 import { assignment, now, state } from './fixtures';
 
@@ -56,6 +56,11 @@ describe('端末の日付とカレンダー', () => {
   });
 });
 describe('課題の登録と編集', () => {
+  it('課題表示では関連するコースの最新の授業名を使う', () => {
+    const a = assignment({ courseName: '保存時の授業名' });
+    expect(courseNameForAssignment(a, [{ id: a.courseId, name: 'コースに書かれた授業名', provider: 'manual' }])).toBe('コースに書かれた授業名');
+    expect(courseNameForAssignment(a, [])).toBe('保存時の授業名');
+  });
   it('同じ授業を再利用し、編集でもIDと作成日を維持する', () => {
     const a = assignment();
     const next = upsertAssignment(state(), { ...a, title: '更新した課題', status: 'submitted' }, a.id, new Date(+now + DAY).toISOString(), 'unused');

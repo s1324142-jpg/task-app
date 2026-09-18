@@ -1,4 +1,8 @@
-import { AppData, AssignmentInput, assignmentSchema } from './models';
+import { AppData, Assignment, AssignmentInput, Course, assignmentSchema } from './models';
+
+export function courseNameForAssignment(assignment: Pick<Assignment, 'courseId' | 'courseName'>, courses: readonly Course[]): string {
+  return courses.find(course => course.id === assignment.courseId)?.name ?? assignment.courseName;
+}
 
 export function upsertAssignment(state: AppData, input: AssignmentInput, id: string, now: string, courseId: string): AppData {
   const existing = state.assignments.find(a => a.id === id);

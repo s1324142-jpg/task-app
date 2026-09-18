@@ -1,3 +1,6 @@
+// Copyright © 2026 nekohako
+// All rights reserved.
+
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';

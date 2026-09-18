@@ -35,17 +35,17 @@ export function Empty({ title = '課題はありません', message = '新しい
     {onAdd && <Button title="最初の課題を登録" onPress={onAdd} />}
   </View>;
 }
-export function AssignmentCard({ assignment: a, now, onPress, reason }: { assignment: Assignment; now: Date; onPress: () => void; reason?: string }) {
+export function AssignmentCard({ assignment: a, courseName = a.courseName, now, onPress, reason }: { assignment: Assignment; courseName?: string; now: Date; onPress: () => void; reason?: string }) {
   const { theme, styles: s } = useTheme(); const colors = theme.colors;
   const entrance = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 360, useNativeDriver: true }).start(); }, [entrance]);
   const diff = new Date(a.deadline).getTime() - now.getTime();
   const color = a.status === 'submitted' ? colors.muted : diff <= 24 * HOUR ? colors.red : diff <= 3 * DAY ? colors.amber : diff <= 7 * DAY ? colors.blue : colors.green;
-  return <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }, { scale }] }}><Pressable accessibilityRole="button" accessibilityLabel={`${a.courseName} ${a.title} ${deadlineLabel(a.deadline)} ${statusLabels[a.status]}`} onPress={onPress}
+  return <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }, { scale }] }}><Pressable accessibilityRole="button" accessibilityLabel={`${courseName} ${a.title} ${deadlineLabel(a.deadline)} ${statusLabels[a.status]}`} onPress={onPress}
     onPressIn={() => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true }).start()} onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
     style={[s.card, { borderLeftWidth: 4, borderLeftColor: color }]}>
-    <View style={s.spread}>{theme.id === 'sparklePink' ? <View style={[s.chip, { minHeight: 28, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.pale }]}><Text style={[s.muted, { color: colors.green }]}>{a.courseName}</Text></View> : <Text style={[s.muted, { flex: 1 }]}>{a.courseName}</Text>}<Feather name="chevron-right" size={18} color={colors.muted} /></View>
+    <View style={s.spread}>{theme.id === 'sparklePink' ? <View style={[s.chip, { minHeight: 28, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.pale }]}><Text style={[s.muted, { color: colors.green }]}>{courseName}</Text></View> : <Text style={[s.muted, { flex: 1 }]}>{courseName}</Text>}<Feather name="chevron-right" size={18} color={colors.muted} /></View>
     <Text style={[s.heading, { lineHeight: 26 }]}>{a.title}</Text>
     <Text style={[s.text, { color, fontSize: 13 }]}>{deadlineLabel(a.deadline)}まで</Text>
     <View style={[s.spread, { flexWrap: 'wrap' }]}>
