@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "78215000883-dkgj9t12oa894qpvoa7lf8il9j9oueif.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "jp.suke.assignments",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "78215000883-uavrmmnsk3i838mtjura6idsnr0536as.apps.googleusercontent.com",
           "client_type": 3
         }
