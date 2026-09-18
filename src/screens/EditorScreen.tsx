@@ -8,9 +8,10 @@ import { RootStackParams } from '../navigation/types';
 import { Assignment, assignmentSchema, statuses, statusLabels } from '../domain/models';
 import { deadlineLabel } from '../domain/dates';
 import { Button, Chips, Empty, reportError } from '../ui/components';
-import { colors, styles as s } from '../ui/theme';
+import { useTheme } from '../themes/ThemeContext';
 
 export function EditorScreen({ route, navigation }: NativeStackScreenProps<RootStackParams, 'Editor'>) {
+  const { theme, styles: s } = useTheme(); const colors = theme.colors;
   const { data, save } = useApp(); const id = route.params?.id;
   const existing = data?.assignments.find(a => a.id === id);
   const [title, setTitle] = useState(existing?.title ?? '');

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "78215000883",
+    "project_id": "project-kadai-fd50e",
+    "storage_bucket": "project-kadai-fd50e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:78215000883:android:c3e2a8a7b75c6985410446",
+        "android_client_info": {
+          "package_name": "jp.suke.assignments"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "78215000883-uavrmmnsk3i838mtjura6idsnr0536as.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQtHD7ulI6ZzQUARfiTCLzphqeDMjB1XU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "78215000883-uavrmmnsk3i838mtjura6idsnr0536as.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

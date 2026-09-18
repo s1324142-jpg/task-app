@@ -23,7 +23,7 @@ export class AppController {
       await this.reconcile();
     });
   }
-  mutate(change: (data: AppData) => AppData): Promise<void> {
+  mutate(change: (data: AppData) => AppData): Promise<AppData> {
     return this.enqueue(async () => {
       if (!this.data) throw new Error('データの読み込みが完了していません');
       const next = change(this.data);
@@ -31,6 +31,16 @@ export class AppController {
       this.data = next;
       this.publish(next);
       await this.reconcile();
+      return next;
+    });
+  }
+  replace(next: AppData): Promise<AppData> {
+    return this.enqueue(async () => {
+      await this.repository.save(next);
+      this.data = next;
+      this.publish(next);
+      await this.reconcile();
+      return next;
     });
   }
   refresh(): Promise<void> { return this.enqueue(() => this.reconcile()); }

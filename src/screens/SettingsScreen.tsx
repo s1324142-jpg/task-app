@@ -1,19 +1,23 @@
 import { Alert } from '../ui/alerts';
 import React, { useCallback, useState } from 'react';
-import { Linking, Platform, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useApp } from '../state/AppContext';
 import { reminderKeys, reminderLabels } from '../domain/models';
 import { requestNotificationPermission } from '../services/notifications';
-import { Button, PageTitle, reportError } from '../ui/components';
-import { colors, styles as s } from '../ui/theme';
+import { Button, MascotImage, PageTitle, reportError } from '../ui/components';
+import { useTheme } from '../themes/ThemeContext';
 import { RootNavigation } from '../navigation/types';
-import { ManabaAuthError, ManabaSession } from '../manaba/ManabaAuthService';
+import { MANABA_RELOGIN_REQUIRED, ManabaAuthError, ManabaSession } from '../manaba/ManabaAuthService';
 import { manabaAuth } from '../manaba/manabaNative';
 import { OTSUMA_MANABA_URL } from '../manaba/otsumaSync';
+import { useAuth } from '../cloud/AuthContext';
 
 export function SettingsScreen() {
-  const { data, change, warning, refresh } = useApp(); const [busy, setBusy] = useState(false);
+  const { theme, styles: s } = useTheme(); const colors = theme.colors;
+  const auth = useAuth();
+  const { data, change, warning, refresh, cloudSyncState, cloudError, lastCloudSyncAt, retryCloudSync } = useApp(); const [busy, setBusy] = useState(false);
   const navigation = useNavigation<RootNavigation>();
   const [manabaUrl, setManabaUrl] = useState(OTSUMA_MANABA_URL);
   const [manabaSession, setManabaSession] = useState<ManabaSession | null>(null);
@@ -72,6 +76,17 @@ export function SettingsScreen() {
   const formatDate = (value?: string) => value ? new Date(value).toLocaleString('ja-JP') : '未同期';
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
     <PageTitle title="設定" subtitle="自分のペースに、合わせよう。" />
+    {theme.id === 'sparklePink' && <View style={[s.card, { flexDirection: 'row', alignItems: 'center' }]}><MascotImage size={64} /><View style={{ flex: 1, gap: 4 }}><Text style={s.heading}>sukeユーザーさん♡</Text><Text style={s.muted}>かわいく、楽しく、今日も一歩ずつ。</Text></View></View>}
+    <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Theme')} style={s.card}>
+      <View style={s.spread}><View style={[s.row, { flex: 1 }]}><View style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.pale }}><Feather name="image" size={20} color={colors.green} /></View><View style={{ flex: 1 }}><Text style={s.heading}>テーマ・壁紙</Text><Text style={s.muted}>使用中：{theme.name}</Text></View></View><Feather name="chevron-right" size={21} color={colors.muted} /></View>
+    </Pressable>
+    <View style={s.card}>
+      <View style={s.spread}><View style={[s.row, { flex: 1 }]}>{auth.user?.photoURL ? <Image source={{ uri: auth.user.photoURL }} style={{ width: 48, height: 48, borderRadius: 24 }} /> : <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}><Feather name="cloud" size={22} color={colors.green} /></View>}<View style={{ flex: 1 }}><Text style={s.heading}>Googleデータ共有</Text><Text numberOfLines={1} style={s.muted}>{auth.user?.email ?? 'AndroidとWebで課題を共有'}</Text></View></View>{auth.user && <Text style={{ color: cloudSyncState === 'synced' ? colors.green : cloudSyncState === 'error' ? colors.red : colors.amber, fontWeight: '700' }}>{cloudSyncState === 'synced' ? '同期済み' : cloudSyncState === 'error' ? '要確認' : '同期中'}</Text>}</View>
+      {!auth.configured && <Text style={s.muted}>{Platform.OS === 'web' ? 'Firebase設定が未登録です。' : 'Firebaseは設定済みです。Android用Googleログインを有効にするにはGoogle Web Client IDとAPK署名鍵のSHA-1登録が必要です。'}</Text>}
+      {auth.configured && !auth.user && <><Text style={s.muted}>同じGoogleアカウントでログインすると、この端末の課題を残したままクラウドへ統合します。</Text><Button disabled={auth.busy || auth.initializing} title={auth.busy ? 'ログイン中…' : 'Googleでログイン'} onPress={() => { void auth.signIn().catch(() => undefined); }} /></>}
+      {auth.user && <><Text style={s.muted}>課題・授業・進捗・設定・テーマを共有します。manabaのCookieと通知予約は端末外へ送りません。</Text>{lastCloudSyncAt && <Text style={s.muted}>最終同期: {new Date(lastCloudSyncAt).toLocaleString('ja-JP')}</Text>}{cloudSyncState === 'error' && <Button secondary title="同期を再試行" onPress={retryCloudSync} />}<Button disabled={auth.busy} secondary title="Googleからログアウト" onPress={() => { void auth.signOut().catch(() => undefined); }} /></>}
+      {(auth.error || cloudError) && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{auth.error ?? cloudError}</Text>}
+    </View>
     <View style={s.card}><Text style={s.heading}>締切通知</Text><Text style={s.muted}>日単位の通知は端末の現地時間で朝9時。締切が朝9時以前の場合、当日は0時にお知らせします。3時間前の通知は締切から計算します。</Text>
       {reminderKeys.map(key => <View key={key} style={s.spread}><Text style={s.text}>{reminderLabels[key]}</Text><Switch accessibilityLabel={`${reminderLabels[key]}の通知`} value={data.settings[key]} disabled={busy} trackColor={{ true: colors.green }} onValueChange={value => {
         setBusy(true); void change(state => ({ ...state, settings: { ...state.settings, [key]: value } })).catch(reportError).finally(() => setBusy(false));
@@ -92,10 +107,13 @@ export function SettingsScreen() {
       {manabaError && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{manabaError}</Text>}
       <Button disabled={busy || !manabaUrl.trim()} title={manabaSession?.status === 'connected' ? 'manabaに再ログイン' : 'manabaにログイン'} onPress={() => { void openManabaLogin('login'); }} />
       <Button disabled={busy || Platform.OS === 'web' || !manabaSession} secondary title="ログイン状態を確認" onPress={() => {
-        if (manabaSession?.status !== 'connected') { setManabaError('manabaのログイン期限が切れました。再ログインしてください。'); return; }
+        if (manabaSession?.status !== 'connected') { setManabaError(MANABA_RELOGIN_REQUIRED); return; }
         void openManabaLogin('sessionCheck');
       }} />
-      <Button disabled={busy || Platform.OS === 'web' || manabaSession?.status !== 'connected'} secondary title="課題を同期" onPress={() => { void openManabaLogin('sync'); }} />
+      <Button disabled={busy || Platform.OS === 'web' || manabaSession?.status !== 'connected'} secondary title="課題を同期" onPress={() => {
+        if (!manabaSession) return;
+        navigation.navigate('ManabaLogin', { baseUrl: manabaSession.baseUrl, authenticatedOrigin: manabaSession.authenticatedOrigin, mode: 'sync', autoStart: true });
+      }} />
       <Button disabled={busy || Platform.OS === 'web' || !manabaSession} secondary title="ログアウト / 連携解除" onPress={confirmLogout} />
       <Text style={s.muted}>最終同期: {formatDate(manabaSession?.lastSyncAt)}</Text>
       <Text style={s.muted}>{Platform.OS === 'web' ? 'manaba連携はAndroid / iOSアプリで利用できます。' : '同期は大妻女子大学manabaの提出物一覧を端末内で解析します。CookieやページのHTMLはアプリの保存領域へコピーしません。'}</Text>

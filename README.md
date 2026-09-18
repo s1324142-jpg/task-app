@@ -16,8 +16,10 @@ Expo / React Native / TypeScriptによるAndroid向けVersion 0.1。手動登録
 - 保存失敗／読込失敗／通知設定失敗の表示と再試行
 - 大妻女子大学manabaのWebViewログイン、OS Cookieによるセッション再利用、SecureStoreの接続状態、連携解除
 - 小テスト・アンケート・レポート・プロジェクト一覧の端末内解析と同期、重複防止・締切更新
+- Default / Sparkle Pinkのテーマ切り替え、プレビュー、端末内への選択保存
+- Firebase GoogleログインによるAndroid・Web間の課題データ同期（設定時のみ）
 
-設定から大妻女子大学manabaへログインすると、そのまま初回同期を実行します。以後は設定の「課題を同期」から提出物一覧を更新できます。解析と保存は端末内で行い、生のHTML、フォーム入力値、Cookie、大学アカウントのID・パスワードはアプリのデータ領域へコピーしません。manaba側の画面変更や、締切が表示されない課題は解析できない場合があります。
+大妻女子大学manabaへログイン後、ホームの「manaba課題を同期」から提出物一覧を更新できます。セッション切れを検知した場合は再ログインを案内し、前回取得済みの課題は端末とFirestoreに残します。解析と保存は取得に成功した場合だけ行い、生のHTML、フォーム入力値、Cookie、大学アカウントのID・パスワードはアプリのデータ領域やFirestoreへコピーしません。manaba側の画面変更や、締切が表示されない課題は解析できない場合があります。
 
 ## 開発
 
@@ -92,9 +94,22 @@ Androidの省電力設定・通知権限によって通知が遅れる場合が�
 
 ## データと安全性
 
-データはこの端末内にのみ保存されます。アプリの削除・データ消去で失われます。クラウド同期・バックアップ・複数端末共有は未実装です。データ形式が壊れていた場合は読み込みエラーを表示し、自動的に空データへ置換しません。
+Googleデータ共有を設定しない場合、データはこの端末内にのみ保存されます。Googleログインを有効にすると、課題・授業・進捗・アプリ設定・テーマをユーザー専用のFirestoreドキュメントへ同期します。初回ログインでは端末とクラウドの課題をIDと更新日時で統合します。manabaのCookie、認証情報、ページHTML、OSの通知予約は同期しません。データ形式が壊れていた場合は読み込みエラーを表示し、自動的に空データへ置換しません。
 
 `.env*`・署名鍵・ネイティブ生成物をGit対象から除外しています。`.env.example`以外には秘密情報を入れないでください。`EXPO_PUBLIC_*`やアプリ内に含まれる値は秘密として扱えないため、大学の認証情報は保存しません。manabaのCookieはWebView/OSのCookieストアにだけ保持し、AsyncStorage、SecureStore、ログへ複製しません。SecureStoreにはURL、接続状態、確認日時だけを保存します。
+
+## Googleデータ共有の設定
+
+1. FirebaseプロジェクトでAuthenticationのGoogleプロバイダーとCloud Firestoreを有効にします。
+2. WebアプリのFirebase公開設定は`src/cloud/firebaseConfig.ts`へ登録済みです。別プロジェクトへ切り替える場合は`.env.example`の値で上書きできます。
+3. Androidアプリ`jp.suke.assignments`をGoogle Cloud/Firebaseへ登録し、APK署名鍵のSHA-1を追加します。
+4. Web OAuthクライアントIDは`src/cloud/firebaseConfig.ts`へ登録済みです。変更時は`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`でも上書きできます。
+5. `firebase deploy --only firestore:rules`で`firestore.rules`を反映します。
+6. Renderを使う場合は同じ環境変数を登録し、RenderのドメインをFirebase Authenticationの承認済みドメインへ追加します。
+
+Android用`google-services.json`はプロジェクトルートへ配置し、Expo prebuild時に`android/app/google-services.json`へ反映します。Firebase側でSHA-1を追加した後は、Android OAuthクライアントを含む最新版を再ダウンロードして置き換えてください。
+
+Firestoreルールは`users/{uid}`配下を本人だけが読み書きできる設定です。ルールをデプロイする前に本番利用しないでください。AndroidのGoogleログインはネイティブモジュールを使うため、設定後にAPKを再ビルドします。
 
 ## 検証と構造
 

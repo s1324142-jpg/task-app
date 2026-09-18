@@ -5,9 +5,10 @@ import { useApp } from '../state/AppContext';
 import { todoAssignments, priorityReason } from '../domain/priority';
 import { RootNavigation } from '../navigation/types';
 import { AssignmentCard, Empty, PageTitle } from '../ui/components';
-import { styles as s } from '../ui/theme';
+import { useTheme } from '../themes/ThemeContext';
 
 export function TodayScreen() {
+  const { styles: s } = useTheme();
   const { data, now } = useApp(); const nav = useNavigation<RootNavigation>();
   const { shouldDoToday, flexible } = todoAssignments(data?.assignments ?? [], now);
   const minutes = shouldDoToday.reduce((total, a) => total + (a.status === 'completed' ? 0 : a.estimatedMinutes ?? 0), 0);

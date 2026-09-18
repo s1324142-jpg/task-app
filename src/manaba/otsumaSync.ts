@@ -105,6 +105,12 @@ export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
   const types = ['query', 'survey', 'report', 'project'];
   const taskPattern = /\\/ct\\/course_[^/?#]+_(query|survey|report|project)_[^/?#]+/i;
   const summaryPattern = /\\/ct\\/home_summary_(query|survey|report|project)/i;
+  const requiresAuthentication = (doc, pageUrl) => {
+    if (doc.querySelector('input[type="password"]')) return true;
+    let path = '';
+    try { path = new URL(pageUrl).pathname; } catch (_) { /* invalid URL is handled elsewhere */ }
+    return Boolean(doc.querySelector('form')) && /ログイン|sign[ -]?in|login/i.test(clean(doc.title) + ' ' + path);
+  };
   const isCourseLink = href => /\\/ct\\/course_/i.test(href) && !taskPattern.test(href);
   const findContainer = anchor => {
     const explicit = anchor.closest('tr, li, article, [class*="list-item"], [class*="list_item"], [class*="content-list"], [class*="content_list"]');
@@ -157,7 +163,7 @@ export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
     return rows;
   };
   (async () => {
-    if (document.querySelector('input[type="password"]')) { post({ kind: 'manaba-sync', status: 'auth_required' }); return; }
+    if (requiresAuthentication(document, window.location.href)) { post({ kind: 'manaba-sync', status: 'auth_required' }); return; }
     const discovered = Array.from(document.querySelectorAll('a[href]')).filter(anchor => summaryPattern.test(anchor.getAttribute('href') || '') || /未提出課題|提出物一覧/.test(clean(anchor.textContent))).map(anchor => {
       try { return new URL(anchor.getAttribute('href'), window.location.href); } catch { return null; }
     }).filter(url => url && url.origin === window.location.origin);
@@ -172,10 +178,14 @@ export const EXTRACT_OTSUMA_ASSIGNMENTS = `(() => {
         const timeout = setTimeout(() => controller.abort(), 12000);
         const response = await fetch(url.toString(), { credentials: 'include', redirect: 'follow', headers: { Accept: 'text/html' }, signal: controller.signal });
         clearTimeout(timeout);
-        if (!response.ok || new URL(response.url).origin !== window.location.origin) continue;
+        const responseUrl = new URL(response.url);
+        // 提出物ページがSSOやログイン画面へ転送された場合は、単なる通信失敗ではなく
+        // セッション切れとしてネイティブ側へ通知する。
+        if (responseUrl.origin !== window.location.origin) { authRequired = true; continue; }
+        if (!response.ok) continue;
         const html = await response.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
-        if (doc.querySelector('input[type="password"]')) { authRequired = true; continue; }
+        if (requiresAuthentication(doc, response.url)) { authRequired = true; continue; }
         pages++;
         records.push(...parseDocument(doc, response.url));
       } catch (_) { /* 他の提出物ページは継続する */ }

@@ -12,6 +12,7 @@ export const manabaSessionSchema = z.object({
 
 export type ManabaSession = z.infer<typeof manabaSessionSchema>;
 export type LoginPageObservation = { url: string; title: string; hasPasswordField: boolean };
+export const MANABA_RELOGIN_REQUIRED = 'manabaへの再ログインが必要です';
 
 export interface ManabaSessionStorage {
   read(): Promise<string | null>;
@@ -101,7 +102,7 @@ export class ManabaAuthService {
 
   async markSynchronized(): Promise<void> {
     const current = await this.getSession();
-    if (!current || current.status !== 'connected') throw new ManabaAuthError('session_expired', 'manabaのログイン期限が切れました。再ログインしてください。');
+    if (!current || current.status !== 'connected') throw new ManabaAuthError('session_expired', MANABA_RELOGIN_REQUIRED);
     await this.storage.write(JSON.stringify({ ...current, lastSyncAt: this.now().toISOString() }));
   }
 

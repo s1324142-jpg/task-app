@@ -48,6 +48,7 @@ describe('端末の日付とカレンダー', () => {
   it('年をまたぐ月とうるう年でも42マスを生成する', () => {
     expect(monthDays(new Date(2027, 0, 1))).toHaveLength(42);
     expect(monthDays(new Date(2028, 1, 1)).some(d => dayKey(d) === '2028-02-29')).toBe(true);
+    expect(monthDays(new Date(2026, 8, 1), true)[0]?.getDay()).toBe(1);
   });
   it('残り1分と締切超過を正しく表示する', () => {
     expect(relativeDeadline(new Date(+now + 1).toISOString(), now)).toBe('あと1分');

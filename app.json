@@ -8,6 +8,7 @@
     "scheme": "suke",
     "android": {
       "package": "jp.suke.assignments",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 1,
       "allowBackup": false,
       "blockedPermissions": [
@@ -27,7 +28,8 @@
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }

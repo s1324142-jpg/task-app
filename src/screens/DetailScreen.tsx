@@ -7,9 +7,10 @@ import { RootStackParams } from '../navigation/types';
 import { Status, statuses, statusLabels } from '../domain/models';
 import { dayDifference, deadlineLabel, relativeDeadline } from '../domain/dates';
 import { Button, Chips, Empty, reportError } from '../ui/components';
-import { colors, styles as s } from '../ui/theme';
+import { useTheme } from '../themes/ThemeContext';
 
 export function DetailScreen({ route, navigation }: NativeStackScreenProps<RootStackParams, 'Detail'>) {
+  const { theme, styles: s } = useTheme(); const colors = theme.colors;
   const { data, change, now } = useApp(); const [busy, setBusy] = useState(false);
   const a = data?.assignments.find(item => item.id === route.params.id);
   if (!a) return <View style={s.content}><Empty title="課題が見つかりません" message="削除された課題の可能性があります。" /></View>;

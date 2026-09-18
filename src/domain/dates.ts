@@ -27,8 +27,9 @@ export function isThisWeek(value: string, now: Date): boolean {
   const date = new Date(value);
   return date >= start && date < end;
 }
-export function monthDays(month: Date): Date[] {
+export function monthDays(month: Date, weekStartsMonday = false): Date[] {
   const start = new Date(month.getFullYear(), month.getMonth(), 1);
-  start.setDate(start.getDate() - start.getDay());
+  const offset = weekStartsMonday ? (start.getDay() + 6) % 7 : start.getDay();
+  start.setDate(start.getDate() - offset);
   return Array.from({ length: 42 }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
 }

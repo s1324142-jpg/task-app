@@ -48,6 +48,15 @@ describe('manaba認証セッション', () => {
     expect(await service.hasValidSession()).toBe(false);
   });
 
+  it('セッション切れでも前回の最終同期日時を保持する', async () => {
+    const { service } = fixture();
+    await service.configure('https://manaba.example.ac.jp/');
+    await service.completeLogin({ url: 'https://manaba.example.ac.jp/home', title: 'manaba', hasPasswordField: false });
+    await service.markSynchronized();
+    await service.markExpired();
+    expect(await service.getSession()).toMatchObject({ status: 'expired', lastSyncAt: '2026-09-11T00:00:00.000Z' });
+  });
+
   it('連携解除はCookie削除後にSecureStore上の情報を削除する', async () => {
     const { service, storage, cookies } = fixture();
     await service.configure('https://manaba.example.ac.jp/');

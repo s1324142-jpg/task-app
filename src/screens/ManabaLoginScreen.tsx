@@ -6,21 +6,24 @@ import WebView, { WebViewMessageEvent, WebViewNavigation } from 'react-native-we
 import type { WebView as WebViewType } from 'react-native-webview';
 import { Alert } from '../ui/alerts';
 import { RootStackParams } from '../navigation/types';
-import { LoginPageObservation, ManabaAuthError } from '../manaba/ManabaAuthService';
+import { LoginPageObservation, MANABA_RELOGIN_REQUIRED, ManabaAuthError } from '../manaba/ManabaAuthService';
 import { manabaAuth } from '../manaba/manabaNative';
 import { EXTRACT_OTSUMA_ASSIGNMENTS, ManabaSyncMessage, parseManabaSyncMessage, toExternalAssignments } from '../manaba/otsumaSync';
 import { mergeExternalAssignments } from '../providers/merge';
 import { useApp } from '../state/AppContext';
 import { Button } from '../ui/components';
-import { colors, styles as s } from '../ui/theme';
+import { useTheme } from '../themes/ThemeContext';
 
 type Props = NativeStackScreenProps<RootStackParams, 'ManabaLogin'>;
 const INSPECT_PAGE = `(() => {
+  const title = String(document.title || '').slice(0, 200);
+  const hasPasswordField = Boolean(document.querySelector('input[type="password"]'));
+  const looksLikeLoginPage = hasPasswordField || (Boolean(document.querySelector('form')) && /ログイン|sign[ -]?in|login/i.test(title + ' ' + window.location.pathname));
   const result = {
     kind: 'manaba-inspection',
     url: window.location.href,
-    title: String(document.title || '').slice(0, 200),
-    hasPasswordField: Boolean(document.querySelector('input[type="password"]'))
+    title,
+    hasPasswordField: looksLikeLoginPage
   };
   window.ReactNativeWebView.postMessage(JSON.stringify(result));
 })(); true;`;
@@ -37,9 +40,11 @@ function parseObservation(value: unknown, eventUrl: string): LoginPageObservatio
 }
 
 export function ManabaLoginScreen({ route, navigation }: Props) {
+  const { theme, styles: s } = useTheme(); const colors = theme.colors;
   const { change } = useApp();
   const webView = useRef<WebViewType>(null);
   const syncPending = useRef(false);
+  const autoSyncAttempted = useRef(false);
   const [observation, setObservation] = useState<LoginPageObservation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,15 +69,22 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
       const currentOrigin = new URL(next.url).origin;
       atConfiguredOrigin = currentOrigin === (route.params.authenticatedOrigin ?? new URL(configuredUrl).origin);
     } catch { /* malformed page URL */ }
-    if (route.params.mode === 'sessionCheck' && atConfiguredOrigin && next.hasPasswordField) {
-      void manabaAuth.markExpired().then(() => setError('manabaのログイン期限が切れました。再ログインしてください。')).catch(() => setError('ログイン状態を更新できませんでした。'));
+    if ((route.params.mode === 'sessionCheck' || route.params.mode === 'sync') && next.hasPasswordField) {
+      syncPending.current = false;
+      setBusy(false);
+      void manabaAuth.markExpired().then(() => setError(MANABA_RELOGIN_REQUIRED)).catch(() => setError('ログイン状態を更新できませんでした。'));
+      return;
+    }
+    if (route.params.mode === 'sync' && route.params.autoStart && atConfiguredOrigin && !autoSyncAttempted.current) {
+      autoSyncAttempted.current = true;
+      void synchronize(next);
     }
   };
   const finishSync = async (message: ManabaSyncMessage) => {
     try {
       if (message.status === 'auth_required') {
         await manabaAuth.markExpired();
-        setError('ログイン期限が切れました。もう一度ログインしてから同期してください。');
+        setError(MANABA_RELOGIN_REQUIRED);
         return;
       }
       if (message.status === 'error') { setError(message.message); return; }
@@ -93,13 +105,11 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
   const complete = async (allowOriginChange = false) => {
     if (!observation) return;
     setBusy(true);
-    let awaitingSync = false;
     try {
       await manabaAuth.completeLogin(observation, allowOriginChange);
       if (route.params.mode === 'login') {
-        awaitingSync = true;
-        syncPending.current = true;
-        webView.current?.injectJavaScript(EXTRACT_OTSUMA_ASSIGNMENTS);
+        Alert.alert('manabaへログインしました', 'ホームの「manaba課題を同期」ボタンから課題を取得できます。');
+        navigation.goBack();
         return;
       }
       if (route.params.mode === 'sessionCheck') Alert.alert('セッションを確認しました', 'ログイン状態は有効です。設定画面から課題を同期できます。');
@@ -113,18 +123,21 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
           { text: 'このサイトで連携', onPress: () => { void complete(true); } },
         ]);
       } else setError(cause instanceof ManabaAuthError ? cause.message : '認証状態を保存できませんでした。');
-    } finally { if (!awaitingSync) setBusy(false); }
+    } finally { setBusy(false); }
   };
-  const synchronize = async () => {
-    if (!observation) return;
+  const synchronize = async (observed = observation) => {
+    if (!observed) return;
     setBusy(true); setError(null);
     try {
-      await manabaAuth.completeLogin(observation);
+      await manabaAuth.completeLogin(observed);
       syncPending.current = true;
       webView.current?.injectJavaScript(EXTRACT_OTSUMA_ASSIGNMENTS);
     } catch (cause) {
       setBusy(false);
-      setError(cause instanceof ManabaAuthError ? cause.message : 'manabaの同期を開始できませんでした。');
+      if (cause instanceof ManabaAuthError && (cause.code === 'authentication_failed' || cause.code === 'session_expired')) {
+        await manabaAuth.markExpired().catch(() => undefined);
+        setError(MANABA_RELOGIN_REQUIRED);
+      } else setError(cause instanceof ManabaAuthError ? cause.message : 'manabaの同期を開始できませんでした。');
     }
   };
   const allowNavigation = ({ url }: WebViewNavigation) => {
@@ -138,7 +151,7 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
       {error && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{error}</Text>}
       <View style={s.row}>
         <View style={{ flex: 1 }}><Button secondary title="再読み込み" onPress={() => webView.current?.reload()} disabled={busy} /></View>
-        <View style={{ flex: 1 }}><Button title={route.params.mode === 'sync' ? '課題を同期' : route.params.mode === 'sessionCheck' ? 'セッションを確認' : 'ログインして同期'} onPress={() => { route.params.mode === 'sync' ? void synchronize() : void complete(); }} disabled={busy || loading || !observation} /></View>
+        <View style={{ flex: 1 }}><Button title={route.params.mode === 'sync' ? (busy ? '同期中…' : '課題を同期') : route.params.mode === 'sessionCheck' ? 'セッションを確認' : 'ログインを完了'} onPress={() => { route.params.mode === 'sync' ? void synchronize() : void complete(); }} disabled={busy || loading || !observation} /></View>
       </View>
     </View>
     <WebView ref={webView} source={{ uri: configuredUrl }} style={{ flex: 1 }}
@@ -148,8 +161,8 @@ export function ManabaLoginScreen({ route, navigation }: Props) {
       onLoadStart={() => { setLoading(true); setError(null); }}
       onLoadEnd={() => { setLoading(false); inspect(); }}
       onMessage={onMessage}
-      onError={() => setError('ネットワークエラーが発生しました。接続を確認して再試行してください。')}
-      onHttpError={event => setError(event.nativeEvent.statusCode === 503 ? 'manabaがメンテナンス中の可能性があります。' : `manabaへの接続に失敗しました（HTTP ${event.nativeEvent.statusCode}）。`)} />
+      onError={() => { syncPending.current = false; setBusy(false); setError('ネットワークエラーが発生しました。接続を確認して再試行してください。'); }}
+      onHttpError={event => { syncPending.current = false; setBusy(false); setError(event.nativeEvent.statusCode === 503 ? 'manabaがメンテナンス中の可能性があります。' : `manabaへの接続に失敗しました（HTTP ${event.nativeEvent.statusCode}）。`); }} />
     {loading && <View pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.green} /></View>}
   </View>;
 }
