@@ -3,10 +3,10 @@ import { Animated, Platform, Pressable, ScrollView, Text, View } from 'react-nat
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state/AppContext';
-import { dayDifference, dayKey, isThisWeek, monthDays, relativeDeadline } from '../domain/dates';
+import { dayDifference, dayKey, isThisWeek, monthDays } from '../domain/dates';
 import { todayAssignments, priorityReason } from '../domain/priority';
 import { RootNavigation } from '../navigation/types';
-import { AssignmentCard, Badge, Button, Empty, MascotImage, PageTitle } from '../ui/components';
+import { AssignmentCard, Button, Empty, PageTitle } from '../ui/components';
 import { useTheme } from '../themes/ThemeContext';
 import { MANABA_RELOGIN_REQUIRED, ManabaSession } from '../manaba/ManabaAuthService';
 import { manabaAuth } from '../manaba/manabaNative';
@@ -65,23 +65,6 @@ export function HomeScreen() {
     <Text style={s.muted}>取得に失敗しても、前回取得した課題は端末とFirestoreに残ります。</Text>
     <Button disabled={manabaBusy || Platform.OS === 'web'} title={manabaBusy ? '確認中…' : manabaSession?.status === 'connected' ? 'manaba課題を同期' : manabaSession ? 'manabaへ再ログイン' : 'manabaへログイン'} onPress={() => { void openManaba(); }} />
   </View>;
-  if (theme.id === 'sparklePink') {
-    const upcoming = [...open].sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline)).slice(0, 4);
-    return <ScrollView style={s.screen} contentContainerStyle={s.content}>
-      <View style={s.spread}><View style={{ flex: 1, gap: 4 }}><Text style={s.muted}>{date}</Text><Text style={s.title}>{now.getHours() < 11 ? 'おはようございます' : now.getHours() < 18 ? 'こんにちは' : 'おつかれさまです'}♡</Text><Text style={[s.heading, { color: colors.green }]}>今日もがんばろう…！</Text></View><MascotImage size={68} /></View>
-      <View style={[s.card, { backgroundColor: '#FFF5FA', borderColor: colors.pink, flexDirection: 'row', alignItems: 'center' }]}><Text style={{ color: colors.green, fontSize: 21 }}>✦</Text><Text style={[s.text, { flex: 1 }]}>小さな「できた」を重ねる日。無理せず自分のペースでね♡</Text></View>
-      {manabaCard}
-      {warning && <Text accessibilityRole="alert" style={[s.muted, { color: colors.amber }]}>{warning}</Text>}
-      <View style={s.card}>
-        <View style={s.spread}><View><Text style={s.heading}>今日の予定</Text><Text style={s.muted}>{today.length}件 · 優先度の高い順</Text></View><Pressable accessibilityRole="button" accessibilityLabel="課題を追加" onPress={() => nav.navigate('Editor')} style={[s.button, { width: 46, minHeight: 46, paddingHorizontal: 0, borderRadius: 23 }]}><Feather name="plus" size={22} color="white" /></Pressable></View>
-        {today.length ? today.slice(0, 5).map(item => <Pressable key={item.id} onPress={() => nav.navigate('Detail', { id: item.id })} style={[s.row, { paddingVertical: 7 }]}><Feather name={item.status === 'completed' ? 'check-circle' : 'circle'} size={21} color={colors.green} /><View style={{ flex: 1 }}><Text numberOfLines={1} style={[s.text, item.status === 'completed' && { color: colors.muted, textDecorationLine: 'line-through' }]}>{item.courseName} {item.title}</Text><Text style={s.muted}>{timeLabel(item.deadline)}</Text></View><Feather name="chevron-right" size={18} color={colors.muted} /></Pressable>) : <Text style={s.muted}>今日やるべき課題はありません。ゆっくり先取りしてみよう♡</Text>}
-      </View>
-      <View style={s.spread}><Text style={s.heading}>締切が近い課題</Text><Text style={s.muted}>{open.length}件</Text></View>
-      <View style={s.card}>{upcoming.length ? upcoming.map((item, index) => <React.Fragment key={item.id}><Pressable onPress={() => nav.navigate('Detail', { id: item.id })} style={[s.spread, { paddingVertical: 5 }]}><View style={{ flex: 1, gap: 3 }}><Text numberOfLines={1} style={s.text}>{item.title}</Text><Text numberOfLines={1} style={s.muted}>{item.courseName} · {timeLabel(item.deadline)}</Text></View><Badge label={relativeDeadline(item.deadline, now)} color={dayDifference(item.deadline, now) <= 1 ? colors.red : colors.green} /></Pressable>{index < upcoming.length - 1 && <View style={s.divider} />}</React.Fragment>) : <Text style={s.muted}>未提出の課題はありません。すてき！</Text>}</View>
-      {!!overdue.length && <Text accessibilityRole="alert" style={[s.text, { color: colors.red }]}>♡ 締切を過ぎた課題が{overdue.length}件あります</Text>}
-      <View style={{ flexDirection: 'row', gap: 10 }}>{[['未提出', open.length, colors.pink], ['今週', open.filter(a => isThisWeek(a.deadline, now)).length, colors.lavender], ['今日', dueToday.length, '#DDF2FA']].map(([label, count, tint]) => <View key={String(label)} style={[s.card, { flex: 1, padding: 12, alignItems: 'center', backgroundColor: String(tint) }]}><Text style={{ fontSize: 26, fontWeight: '800', color: colors.ink }}>{count}</Text><Text style={s.muted}>{label}</Text></View>)}</View>
-    </ScrollView>;
-  }
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
     <PageTitle title="suke" subtitle={date} onAdd={() => nav.navigate('Editor')} />
     <View style={{ backgroundColor: colors.green, borderRadius: 28, padding: 24, gap: 18, overflow: 'hidden' }}>
