@@ -50,7 +50,7 @@ export function HomeScreen() {
         nav.navigate('Main', { screen: 'Settings' });
       } else if (session.status === 'expired') {
         setManabaError(MANABA_RELOGIN_REQUIRED);
-        nav.navigate('ManabaLogin', { baseUrl: session.baseUrl, authenticatedOrigin: session.authenticatedOrigin, mode: 'login' });
+        nav.navigate('ManabaLogin', { baseUrl: session.baseUrl, authenticatedOrigin: session.authenticatedOrigin, mode: 'sync', autoStart: true });
       } else {
         nav.navigate('ManabaLogin', { baseUrl: session.baseUrl, authenticatedOrigin: session.authenticatedOrigin, mode: 'sync', autoStart: true });
       }
