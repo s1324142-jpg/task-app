@@ -45,10 +45,10 @@ export function SettingsScreen() {
     }
     setBusy(true); setManabaError(null);
     try {
-      const baseUrl = mode === 'login' || !manabaSession ? await manabaAuth.configure(manabaUrl) : manabaSession.baseUrl;
+      const baseUrl = mode === 'login' ? await manabaAuth.configure(manabaUrl) : manabaSession?.baseUrl;
       if (!baseUrl) throw new ManabaAuthError('not_configured', '先にmanaba URLを入力してください。');
       await loadManaba();
-      navigation.navigate('ManabaLogin', { baseUrl, authenticatedOrigin: manabaSession?.authenticatedOrigin, mode, autoStart: mode === 'sync' });
+      navigation.navigate('ManabaLogin', { baseUrl, authenticatedOrigin: manabaSession?.authenticatedOrigin, mode });
     } catch (cause) {
       setManabaError(cause instanceof ManabaAuthError ? cause.message : 'manaba連携を開始できませんでした。');
     } finally { setBusy(false); }
@@ -104,7 +104,7 @@ export function SettingsScreen() {
       <TextInput accessibilityLabel="manaba URL" autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://..." value={manabaUrl} onChangeText={setManabaUrl} editable={!busy} selectTextOnFocus style={s.input} />
       <Text style={s.muted}>大学から案内されたmanabaのURLを入力してください。IDやパスワードは入力・保存しません。</Text>
       {manabaError && <Text accessibilityRole="alert" style={[s.muted, { color: colors.red }]}>{manabaError}</Text>}
-      <Button disabled={busy || !manabaUrl.trim()} title={manabaSession?.status === 'connected' ? 'manabaに再ログインして同期' : 'manabaにログインして同期'} onPress={() => { void openManabaLogin('sync'); }} />
+      <Button disabled={busy || !manabaUrl.trim()} title={manabaSession?.status === 'connected' ? 'manabaに再ログイン' : 'manabaにログイン'} onPress={() => { void openManabaLogin('login'); }} />
       <Button disabled={busy || Platform.OS === 'web' || !manabaSession} secondary title="ログイン状態を確認" onPress={() => {
         if (manabaSession?.status !== 'connected') { setManabaError(MANABA_RELOGIN_REQUIRED); return; }
         void openManabaLogin('sessionCheck');
